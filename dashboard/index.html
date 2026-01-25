@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymBuddy - AI-Powered Gym Assistant | Demo</title>
+    <meta name="description" content="WhatsApp-first AI-powered gym member retention platform for Indian fitness centers">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-gradient"></div>
+    <div class="bg-pattern"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🏋️</span>
+                <span class="logo-text">GymBuddy</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#demo">Demo</a>
+                <a href="#api">API</a>
+                <a href="#pricing">Pricing</a>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-status" id="statusBtn">
+                    <span class="status-dot"></span>
+                    Checking...
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-icon">✨</span>
+                AI-Powered WhatsApp Bot for Gyms
+            </div>
+            <h1 class="hero-title">
+                Retain Members.
+                <span class="gradient-text">Automate Engagement.</span>
+                Grow Revenue.
+            </h1>
+            <p class="hero-description">
+                GymBuddy is a WhatsApp-first AI assistant that handles class bookings, 
+                personalized workout & diet plans, and proactive member engagement — 
+                built specifically for Indian fitness centers.
+            </p>
+            <div class="hero-cta">
+                <button class="btn-primary" onclick="openSimulator()">
+                    <span>Try Live Demo</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                <button class="btn-secondary" onclick="openDocs()">
+                    <span>View API Docs</span>
+                </button>
+            </div>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-value">97%</span>
+                    <span class="stat-label">Message Accuracy</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">&lt;2s</span>
+                    <span class="stat-label">Response Time</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-value">24/7</span>
+                    <span class="stat-label">Availability</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="phone-mockup">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                    <div class="whatsapp-header">
+                        <div class="wa-back">←</div>
+                        <div class="wa-avatar">🏋️</div>
+                        <div class="wa-info">
+                            <div class="wa-name">GymBuddy</div>
+                            <div class="wa-status">online</div>
+                        </div>
+                    </div>
+                    <div class="chat-container" id="chatContainer">
+                        <!-- Messages will be added here -->
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+                        <button class="send-btn" onclick="sendMessage()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <span class="section-tag">Features</span>
+            <h2>Everything Your Gym Needs</h2>
+            <p>Comprehensive AI-powered features to boost member retention and streamline operations</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI-Powered Conversations</h3>
+                <p>Natural language understanding powered by Google Gemini. Handles greetings, FAQs, bookings, and complex queries intelligently.</p>
+            </div>
+            <div class="feature-card featured">
+                <div class="feature-icon">📅</div>
+                <h3>Smart Class Booking</h3>
+                <p>Book classes, manage waitlists, send reminders, and handle cancellations — all via WhatsApp with interactive buttons.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💪</div>
+                <h3>Personalized Workout Plans</h3>
+                <p>AI generates custom workout routines based on member goals, fitness level, and preferences. Weekly adaptations included.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🥗</div>
+                <h3>Diet Plans & Nutrition</h3>
+                <p>Indian cuisine-friendly meal plans. Veg/Non-veg options. Macro tracking with easy WhatsApp commands.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Progress Tracking</h3>
+                <p>Weight logging, streak tracking, and progress reports. Weekly check-ins to keep members motivated.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3>Smart Engagement</h3>
+                <p>State machine identifies at-risk members. Proactive messages to re-engage before they churn.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo-section" id="demo">
+        <div class="section-header">
+            <span class="section-tag">Live Demo</span>
+            <h2>See It In Action</h2>
+            <p>Try these commands in the chat simulator above</p>
+        </div>
+        <div class="commands-grid">
+            <div class="command-card" onclick="simulateCommand('hi')">
+                <span class="cmd-icon">👋</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">hi / hello</span>
+                    <span class="cmd-desc">Get greeting with options</span>
+                </div>
+            </div>
+            <div class="command-card" onclick="simulateCommand('workout')">
+                <span class="cmd-icon">🏃</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">workout</span>
+                    <span class="cmd-desc">Get today's workout plan</span>
+                </div>
+            </div>
+            <div class="command-card" onclick="simulateCommand('diet')">
+                <span class="cmd-icon">🥗</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">diet</span>
+                    <span class="cmd-desc">View personalized meal plan</span>
+                </div>
+            </div>
+            <div class="command-card" onclick="simulateCommand('book class')">
+                <span class="cmd-icon">📅</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">book class</span>
+                    <span class="cmd-desc">Book a gym class</span>
+                </div>
+            </div>
+            <div class="command-card" onclick="simulateCommand('progress')">
+                <span class="cmd-icon">📈</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">progress</span>
+                    <span class="cmd-desc">Check your stats</span>
+                </div>
+            </div>
+            <div class="command-card" onclick="simulateCommand('help')">
+                <span class="cmd-icon">❓</span>
+                <div class="cmd-info">
+                    <span class="cmd-text">help</span>
+                    <span class="cmd-desc">Show all commands</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Section -->
+    <section class="api-section" id="api">
+        <div class="section-header">
+            <span class="section-tag">API Reference</span>
+            <h2>Developer-Friendly REST API</h2>
+            <p>Full OpenAPI documentation with interactive testing</p>
+        </div>
+        <div class="api-cards">
+            <div class="api-card">
+                <div class="api-method get">GET</div>
+                <div class="api-endpoint">/api/v1/members/{phone}</div>
+                <p>Get member details including plans and bookings</p>
+            </div>
+            <div class="api-card">
+                <div class="api-method post">POST</div>
+                <div class="api-endpoint">/api/v1/members</div>
+                <p>Create new member with goal and preferences</p>
+            </div>
+            <div class="api-card">
+                <div class="api-method post">POST</div>
+                <div class="api-endpoint">/api/v1/members/{phone}/workout/generate</div>
+                <p>Generate AI-powered workout plan</p>
+            </div>
+            <div class="api-card">
+                <div class="api-method post">POST</div>
+                <div class="api-endpoint">/api/v1/members/{phone}/diet/generate</div>
+                <p>Generate personalized diet plan</p>
+            </div>
+            <div class="api-card">
+                <div class="api-method get">GET</div>
+                <div class="api-endpoint">/api/v1/classes</div>
+                <p>List upcoming gym classes with availability</p>
+            </div>
+            <div class="api-card">
+                <div class="api-method post">POST</div>
+                <div class="api-endpoint">/api/v1/webhooks/whatsapp</div>
+                <p>WhatsApp Business API webhook endpoint</p>
+            </div>
+        </div>
+        <div class="api-cta">
+            <button class="btn-primary" onclick="openDocs()">
+                Open Full API Documentation
+            </button>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="section-header">
+            <span class="section-tag">Pricing</span>
+            <h2>Simple, Transparent Pricing</h2>
+            <p>Choose the plan that fits your gym's size</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Starter</h3>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount">4,999</span>
+                        <span class="period">/month</span>
+                    </div>
+                </div>
+                <ul class="pricing-features">
+                    <li>✓ Up to 200 members</li>
+                    <li>✓ WhatsApp integration</li>
+                    <li>✓ Basic AI responses</li>
+                    <li>✓ Class booking</li>
+                    <li>✓ Email support</li>
+                </ul>
+                <button class="btn-secondary">Get Started</button>
+            </div>
+            <div class="pricing-card featured">
+                <div class="popular-badge">Most Popular</div>
+                <div class="pricing-header">
+                    <h3>Growth</h3>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount">9,999</span>
+                        <span class="period">/month</span>
+                    </div>
+                </div>
+                <ul class="pricing-features">
+                    <li>✓ Up to 500 members</li>
+                    <li>✓ Everything in Starter</li>
+                    <li>✓ Custom AI training</li>
+                    <li>✓ Workout & Diet plans</li>
+                    <li>✓ Analytics dashboard</li>
+                    <li>✓ Priority support</li>
+                </ul>
+                <button class="btn-primary">Get Started</button>
+            </div>
+            <div class="pricing-card">
+                <div class="pricing-header">
+                    <h3>Enterprise</h3>
+                    <div class="price">
+                        <span class="currency">₹</span>
+                        <span class="amount">24,999</span>
+                        <span class="period">/month</span>
+                    </div>
+                </div>
+                <ul class="pricing-features">
+                    <li>✓ Unlimited members</li>
+                    <li>✓ Everything in Growth</li>
+                    <li>✓ Multi-branch support</li>
+                    <li>✓ Custom integrations</li>
+                    <li>✓ Dedicated account manager</li>
+                    <li>✓ SLA guarantee</li>
+                </ul>
+                <button class="btn-secondary">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo">
+                    <span class="logo-icon">🏋️</span>
+                    <span class="logo-text">GymBuddy</span>
+                </div>
+                <p>AI-powered WhatsApp assistant for Indian fitness centers</p>
+            </div>
+            <div class="footer-info">
+                <p>Built with ❤️ for Indian Gyms</p>
+                <p>© 2026 GymBuddy. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Simulator Modal -->
+    <div class="modal" id="simulatorModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSimulator()">×</button>
+            <h2>WhatsApp Simulator</h2>
+            <p>Send a test message to GymBuddy</p>
+            <div class="simulator-form">
+                <input type="text" id="testPhone" placeholder="+919876543210" value="+919876543210">
+                <input type="text" id="testMessage" placeholder="Type your message...">
+                <button class="btn-primary" onclick="sendTestMessage()">Send via API</button>
+            </div>
+            <div class="simulator-response" id="simulatorResponse"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
