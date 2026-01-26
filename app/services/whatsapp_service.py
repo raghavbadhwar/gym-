@@ -2,12 +2,17 @@
 WhatsApp Service - Handle all WhatsApp Business API interactions
 """
 import httpx
-import logging
+from loguru import logger
 from typing import Optional, List, Dict, Any
+import asyncio
 
 from app.config import settings
 
-logger = logging.getLogger(__name__)
+# WhatsApp message limits
+WHATSAPP_MAX_MESSAGE_LENGTH = 4096
+MAX_RETRIES = 3
+RETRY_DELAY = 1  # seconds
+MESSAGE_CHUNK_DELAY = 0.5  # seconds between multi-part messages
 
 
 class WhatsAppService:
@@ -29,25 +34,101 @@ class WhatsAppService:
     def messages_url(self) -> str:
         return f"{self.api_url}/{self.phone_number_id}/messages"
     
+    def _validate_and_split_message(self, text: str) -> List[str]:
+        """
+        Validate message length and split if necessary.
+        WhatsApp has a 4,096 character limit per message.
+        
+        Args:
+            text: Message text to validate and potentially split
+            
+        Returns:
+            List of message chunks (single item if within limit)
+        """
+        if len(text) <= WHATSAPP_MAX_MESSAGE_LENGTH:
+            return [text]
+        
+        logger.warning(f"Message length {len(text)} exceeds WhatsApp limit of {WHATSAPP_MAX_MESSAGE_LENGTH}")
+        
+        # Split long message into chunks
+        chunks = []
+        margin = 100  # Leave margin for continuation markers
+        max_chunk_size = WHATSAPP_MAX_MESSAGE_LENGTH - margin
+        
+        # Try to split by lines first
+        lines = text.split('\n')
+        current_chunk = ""
+        
+        for line in lines:
+            # If a single line is still too long even for one chunk, force split
+            if len(line) > max_chunk_size:
+                # Save current chunk first
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                    current_chunk = ""
+                
+                # Force split long line by character chunks
+                while len(line) > max_chunk_size:
+                    chunks.append(line[:max_chunk_size])
+                    line = line[max_chunk_size:]
+                
+                # Add remainder if any
+                if line:
+                    current_chunk = line + "\n"
+            # Normal line processing
+            elif len(current_chunk) + len(line) + 1 > max_chunk_size:
+                # Save current chunk
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                current_chunk = line + "\n"
+            else:
+                current_chunk += line + "\n"
+        
+        # Add remaining content
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+        
+        # Add continuation markers
+        if len(chunks) > 1:
+            for i in range(len(chunks)):
+                if i < len(chunks) - 1:
+                    chunks[i] += f"\n\n_(...{i+1}/{len(chunks)})_"
+                else:
+                    chunks[i] = f"_(...{i+1}/{len(chunks)})_\n\n" + chunks[i]
+        
+        logger.debug(f"Message split into {len(chunks)} chunk(s)")
+        return chunks
+    
     async def send_text(self, to: str, text: str) -> dict:
         """
-        Send a simple text message.
+        Send a simple text message with automatic splitting if too long.
         
         Args:
             to: Recipient phone number (with country code, no +)
             text: Message text
         
         Returns:
-            API response
+            API response (last chunk if multiple sent)
         """
-        payload = {
-            "messaging_product": "whatsapp",
-            "recipient_type": "individual",
-            "to": to,
-            "type": "text",
-            "text": {"body": text}
-        }
-        return await self._send(payload)
+        # Validate and split if necessary
+        chunks = self._validate_and_split_message(text)
+        
+        result = None
+        for i, chunk in enumerate(chunks):
+            payload = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": to,
+                "type": "text",
+                "text": {"body": chunk}
+            }
+            result = await self._send(payload)
+            
+            # Add small delay between chunks to ensure order
+            if i < len(chunks) - 1:
+                await asyncio.sleep(MESSAGE_CHUNK_DELAY)
+        
+        return result
     
     async def send_buttons(
         self,
@@ -265,26 +346,60 @@ class WhatsAppService:
     
     async def _send(self, payload: dict) -> dict:
         """
-        Internal method to send API request.
+        Internal method to send API request with retry logic.
+        Implements exponential backoff for transient failures.
         """
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.messages_url,
-                    json=payload,
-                    headers=self.headers,
-                    timeout=30.0
-                )
-                response.raise_for_status()
-                result = response.json()
-                logger.info(f"Message sent successfully: {result}")
-                return result
-        except httpx.HTTPStatusError as e:
-            logger.error(f"WhatsApp API error: {e.response.text}")
-            raise
-        except Exception as e:
-            logger.error(f"Error sending WhatsApp message: {e}")
-            raise
+        last_exception = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                # Configure timeout to prevent hanging on network issues
+                timeout = httpx.Timeout(30.0, connect=10.0)
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(
+                        self.messages_url,
+                        json=payload,
+                        headers=self.headers
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    logger.info(f"Message sent successfully: {result}")
+                    return result
+                    
+            except httpx.TimeoutException as e:
+                last_exception = e
+                logger.warning(f"WhatsApp API timeout (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                if attempt < MAX_RETRIES - 1:
+                    delay = RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                    logger.info(f"Retrying in {delay}s...")
+                    await asyncio.sleep(delay)
+                continue
+                
+            except httpx.HTTPStatusError as e:
+                # Don't retry on client errors (4xx), but do retry on server errors (5xx)
+                if 400 <= e.response.status_code < 500:
+                    logger.error(f"WhatsApp API client error: {e.response.text}")
+                    raise  # Don't retry client errors
+                else:
+                    last_exception = e
+                    logger.warning(f"WhatsApp API server error (attempt {attempt + 1}/{MAX_RETRIES}): {e.response.text}")
+                    if attempt < MAX_RETRIES - 1:
+                        delay = RETRY_DELAY * (2 ** attempt)
+                        logger.info(f"Retrying in {delay}s...")
+                        await asyncio.sleep(delay)
+                    continue
+                    
+            except Exception as e:
+                last_exception = e
+                logger.error(f"Unexpected error sending WhatsApp message (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+                if attempt < MAX_RETRIES - 1:
+                    delay = RETRY_DELAY * (2 ** attempt)
+                    await asyncio.sleep(delay)
+                continue
+        
+        # All retries exhausted
+        logger.error(f"Failed to send WhatsApp message after {MAX_RETRIES} attempts")
+        raise last_exception
     
     def parse_webhook_message(self, data: dict) -> Optional[Dict[str, Any]]:
         """

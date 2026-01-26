@@ -4,17 +4,17 @@ Conversation Model - Store chat history for AI memory
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
-import uuid
 
 from app.database import Base
+from app.db_types import GUID, generate_uuid
 
 
 class Conversation(Base):
     """Store conversation history for each member."""
     __tablename__ = "conversations"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    member_id = Column(String(36), ForeignKey("members.id"), nullable=False, index=True)
+    id = Column(GUID(), primary_key=True, default=generate_uuid)
+    member_id = Column(GUID(), ForeignKey("members.id"), nullable=False, index=True)
     
     # Message details
     role = Column(String(20), nullable=False)  # 'user' or 'assistant'
@@ -35,8 +35,8 @@ class MemberPreferences(Base):
     """Store learned preferences from conversations."""
     __tablename__ = "member_preferences"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    member_id = Column(String(36), ForeignKey("members.id"), nullable=False, unique=True)
+    id = Column(GUID(), primary_key=True, default=generate_uuid)
+    member_id = Column(GUID(), ForeignKey("members.id"), nullable=False, unique=True)
     
     # Learned preferences
     preferred_workout_time = Column(String(20), nullable=True)  # morning, evening

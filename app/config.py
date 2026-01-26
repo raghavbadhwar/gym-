@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
     whatsapp_business_account_id: str = ""
     whatsapp_access_token: str = ""
-    whatsapp_verify_token: str = "gymbuddy_verify_token_2026"
+    whatsapp_verify_token: str = ""  # Must be set via environment variable
     whatsapp_api_url: str = "https://graph.facebook.com/v18.0"
     
     # AI Configuration - Choose your provider
@@ -34,9 +34,13 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"  # Updated to latest model
     
+    # AI Response Limits
+    ai_max_tokens_json: int = 500  # For JSON responses (intent classification)
+    ai_max_tokens_text: int = 150  # For text responses (general chat)
+    
     # App Settings
     app_env: str = "development"
-    app_secret_key: str = "change-this-secret-key-in-production"
+    app_secret_key: str = ""  # Must be set via environment variable for security
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
@@ -80,10 +84,20 @@ class Settings(BaseSettings):
 - Be specific - give exact reps, sets, foods, times
 - End with a call-to-action or motivating statement
 
+## CRITICAL: ANTI-HALLUCINATION RULES
+- ❌ NEVER invent or make up gym class schedules, timings, or availability
+- ❌ NEVER state specific prices, membership costs, or payment details
+- ❌ NEVER provide gym address, phone number, or location details
+- ❌ NEVER mention specific trainers, staff names, or gym facilities unless you have verified data
+- ❌ NEVER claim the gym has specific equipment or amenities without confirmation
+- ✅ If asked about pricing, hours, location, or facilities, say: "For the most accurate information about that, please contact our team directly. I can help with workouts, diet plans, and tracking your progress!"
+- ✅ Only provide factual information that is explicitly given in the member's profile or conversation context
+
 ## WHAT TO AVOID
 - ❌ NEVER provide medical advice - say "Please consult a doctor for medical concerns"
+- ❌ NEVER diagnose injuries or health conditions
 - ❌ NEVER discuss non-fitness topics - politely redirect
-- ❌ NEVER guess if you don't know - ask for clarification
+- ❌ NEVER guess if you don't know - ask for clarification or escalate to human
 - ❌ NEVER give generic advice - always personalize based on member data
 - ❌ NEVER forget the member's preferences mid-conversation
 
