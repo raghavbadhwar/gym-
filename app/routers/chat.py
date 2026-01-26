@@ -8,11 +8,13 @@ This provides a simple chat API that:
 4. Stores conversation history
 """
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime
 import json
+import re
 
 from app.database import get_db
 from app.services.member_service import MemberService
@@ -20,6 +22,7 @@ from app.services.workout_service import WorkoutService
 from app.services.diet_service import DietService
 from app.services.ai_service import ai_service
 from app.services.ai_engine import ai_engine, Intent
+from app.models.conversation import Conversation
 from app.config import settings
 from loguru import logger
 
@@ -58,24 +61,12 @@ class MemberOnboard(BaseModel):
     dietary_preference: Optional[str] = "non_veg"  # veg, non_veg, eggetarian
 
 
-# ========== Endpoints ==========
+# ========== Sync Helper Functions ==========
 
-@router.post("/message", response_model=ChatResponse)
-async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
+def _get_initial_context_sync(chat: ChatMessage, db: Session):
     """
-    Send a chat message and get AI-powered personalized response.
-    
-    This endpoint:
-    1. Looks up or creates the member
-    2. Retrieves their full profile and progress
-    3. Loads conversation history for context
-    4. Classifies intent using AI
-    5. Generates personalized response with real AI
-    6. Saves conversation to history
+    Synchronously load member, context, and plans.
     """
-    from app.models.conversation import Conversation
-    import re
-    
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
     diet_service = DietService(db)
@@ -160,23 +151,58 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
         member_context["progress"] = progress
     except Exception as e:
         logger.warning(f"Could not load plans: {e}")
+
+    return member, is_new, member_context
+
+def _save_message_sync(db: Session, member_id: str, role: str, message: str, intent: str):
+    """Synchronously save a message to conversation history."""
+    conv = Conversation(
+        member_id=member_id,
+        role=role,
+        message=message,
+        intent=intent
+    )
+    db.add(conv)
+    if role == "assistant":
+        db.commit()
+
+
+# ========== Endpoints ==========
+
+@router.post("/message", response_model=ChatResponse)
+async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
+    """
+    Send a chat message and get AI-powered personalized response.
+
+    This endpoint:
+    1. Looks up or creates the member
+    2. Retrieves their full profile and progress
+    3. Loads conversation history for context
+    4. Classifies intent using AI
+    5. Generates personalized response with real AI
+    6. Saves conversation to history
+    """
     
-    # Classify intent
+    # 1. Run synchronous member loading in threadpool
+    member, is_new, member_context = await run_in_threadpool(
+        _get_initial_context_sync, chat, db
+    )
+
+    # 2. Classify intent (Async)
     intent_result = await ai_engine.classify_intent(chat.message, is_new_user=is_new)
     intent = intent_result.get("intent", Intent.GENERAL)
     
     logger.info(f"Intent: {intent.value}, Confidence: {intent_result.get('confidence', 0)}")
     
-    # Save user message to conversation history
-    user_conv = Conversation(
-        member_id=str(member.id),
-        role="user",
-        message=chat.message,
-        intent=intent.value
+    # 3. Save user message (Sync in threadpool)
+    await run_in_threadpool(
+        _save_message_sync, db, str(member.id), "user", chat.message, intent.value
     )
-    db.add(user_conv)
     
-    # Handle specific intents with real data
+    # 4. Handle intent (Async wrapper around mixed logic)
+    workout_service = WorkoutService(db)
+    diet_service = DietService(db)
+
     response = await _handle_intent(
         intent=intent,
         message=chat.message,
@@ -187,15 +213,10 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
         db=db
     )
     
-    # Save assistant response to conversation history
-    assistant_conv = Conversation(
-        member_id=str(member.id),
-        role="assistant",
-        message=response[:500],  # Truncate for storage
-        intent=intent.value
+    # 5. Save assistant response (Sync in threadpool)
+    await run_in_threadpool(
+        _save_message_sync, db, str(member.id), "assistant", response[:500], intent.value
     )
-    db.add(assistant_conv)
-    db.commit()
     
     return ChatResponse(
         response=response,
@@ -333,23 +354,22 @@ async def _handle_intent(
     # ===== WORKOUT =====
     if intent == Intent.WORKOUT:
         # Check if member has a workout plan
-        current_plan = workout_service.get_current_plan(member.id)
+        current_plan = await run_in_threadpool(workout_service.get_current_plan, member.id)
         
         if not current_plan:
             # Generate new plan with AI
             logger.info(f"Generating new workout plan for {member.name}")
             plan = await workout_service.generate_plan(member, week_number=1)
-            return workout_service.format_workout_for_whatsapp(
-                workout_service.get_todays_workout(member)
-            )
+            todays_workout = await run_in_threadpool(workout_service.get_todays_workout, member)
+            return workout_service.format_workout_for_whatsapp(todays_workout)
         else:
             # Return today's workout from existing plan
-            workout = workout_service.get_todays_workout(member)
-            return workout_service.format_workout_for_whatsapp(workout)
+            todays_workout = await run_in_threadpool(workout_service.get_todays_workout, member)
+            return workout_service.format_workout_for_whatsapp(todays_workout)
     
     # ===== DIET =====
     elif intent == Intent.DIET:
-        current_plan = diet_service.get_current_plan(member.id)
+        current_plan = await run_in_threadpool(diet_service.get_current_plan, member.id)
         
         if not current_plan:
             # Generate new diet plan with AI
@@ -361,8 +381,10 @@ async def _handle_intent(
     
     # ===== PROGRESS =====
     elif intent == Intent.PROGRESS:
-        progress = workout_service.get_progress_summary(member)
-        diet_trend = diet_service.get_weight_trend(member) if member.current_weight_kg else None
+        progress = await run_in_threadpool(workout_service.get_progress_summary, member)
+        diet_trend = None
+        if member.current_weight_kg:
+             diet_trend = await run_in_threadpool(diet_service.get_weight_trend, member)
         
         lines = [
             f"📊 *Progress Report for {member.name}*",
@@ -454,4 +476,3 @@ In the meantime, is there anything else I can help with?"""
             }
         )
         return response
-
