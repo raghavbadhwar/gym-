@@ -376,20 +376,84 @@ Response:"""
 
         try:
             response = await self._generate_text(prompt)
-            # Apply guardrails check on response
+            
+            # Apply guardrails: check for hallucinations and off-topic content
+            if self._contains_hallucination(response):
+                logger.warning(f"Hallucination detected in AI response: {response[:100]}...")
+                # Return safe, grounded response
+                name = context.get('member_name', '') if context else ''
+                return f"{'Hey ' + name + '! ' if name else ''}I can help you with your workout plan, diet tracking, and progress monitoring! What would you like to focus on today? 💪"
+            
             if self._is_off_topic_response(response):
                 name = context.get('member_name', '') if context else ''
                 return f"{'Hey ' + name + '! ' if name else ''}I'm your gym assistant, so I'm best at helping with fitness topics! 💪 Is there anything gym-related I can help you with?"
+            
             return response
         except Exception as e:
             logger.error(f"Response generation failed: {e}")
             return self._get_fallback_response(intent)
     
+    def _contains_hallucination(self, response: str) -> bool:
+        """
+        Detect potential hallucinations in AI responses.
+        Returns True if response contains unverified factual claims.
+        """
+        response_lower = response.lower()
+        
+        # Check for specific factual claims that AI shouldn't make
+        hallucination_indicators = [
+            # Pricing hallucinations
+            r'\$\d+', r'₹\d+', r'rupees?\s+\d+', r'\d+\s*(?:rs|inr)',
+            r'costs?\s+\d+', r'price.*\d+', r'fee.*\d+',
+            
+            # Location/address hallucinations
+            r'located at', r'address is', r'visit us at',
+            r'street', r'road', r'sector', r'block',
+            
+            # Specific timing hallucinations (when not grounded in data)
+            r'open.*(?:am|pm)', r'closes at', r'timings?.*\d+',
+            
+            # Phone/contact hallucinations
+            r'\d{10}', r'call us', r'contact.*\d+',
+            
+            # Staff/trainer name hallucinations
+            r'trainer named', r'instructor.*(?:john|priya|rahul|amit)',
+            
+            # Medical advice hallucinations
+            r'diagnosed', r'you have', r'medical condition',
+            r'take.*(?:medicine|medication)', r'prescription',
+            
+            # Equipment/facility hallucinations
+            r'we have.*(?:\d+|new|latest)', r'gym has.*(?:\d+|brand new)',
+            r'recently installed', r'just got',
+        ]
+        
+        import re
+        for pattern in hallucination_indicators:
+            if re.search(pattern, response_lower):
+                logger.warning(f"Hallucination pattern detected: {pattern}")
+                return True
+        
+        # Check for uncertainty phrases that suggest AI is guessing
+        uncertainty_phrases = [
+            "i think", "probably", "might be", "could be",
+            "i believe", "i assume", "seems like",
+            "as far as i know", "if i remember correctly"
+        ]
+        
+        for phrase in uncertainty_phrases:
+            if phrase in response_lower:
+                logger.warning(f"Uncertainty phrase detected: {phrase}")
+                return True
+        
+        return False
+    
     def _is_off_topic_response(self, response: str) -> bool:
         """Check if response strayed off-topic."""
         off_topic_indicators = [
             "as an ai", "i cannot", "i don't have access to",
-            "weather", "stock", "news", "politics", "recipe"
+            "weather", "stock", "news", "politics", "recipe",
+            "sorry, i can't", "i'm not able to"
         ]
         response_lower = response.lower()
         return any(ind in response_lower for ind in off_topic_indicators)
@@ -401,20 +465,23 @@ Response:"""
         if intent == Intent.GENERAL and message:
             msg_lower = message.lower()
             if "class" in msg_lower or "schedule" in msg_lower:
-                return "Our classes include Yoga, HIIT, Spin, and Boxing! 📅 Reply 'book' to see the schedule or book a spot."
+                return "I can help you book classes! 📅 Reply 'book' to see available options."
             if "diet" in msg_lower or "food" in msg_lower or "eat" in msg_lower:
                 return "Nutrition is key! 🥗 Reply 'diet' to get your personalized meal plan."
             if "workout" in msg_lower or "exercise" in msg_lower or "gym" in msg_lower:
                 return "Ready to sweat? 💪 Reply 'workout' for your daily routine."
             if "goal" in msg_lower or "weight" in msg_lower or "fat" in msg_lower:
                 return "I can help you reach your goals! 🎯 Tell me your target weight or reply 'update goal'."
+            # Pricing/location/hours questions - avoid hallucinations
+            if any(word in msg_lower for word in ["price", "cost", "fee", "membership", "location", "address", "hours", "timings", "open"]):
+                return "For accurate details about pricing, location, and hours, please contact our team directly. I can help you with workouts, diet plans, and tracking your progress! 💪"
 
         responses = {
-            Intent.NEW_LEAD: f"Welcome to {settings.gym_name}! 👋 I'm your virtual assistant. Are you looking to join or just visiting?",
-            Intent.BOOKING: "I'd love to help you book a class! 📅 Which class interests you? We have Yoga, HIIT, Spin, and more!",
-            Intent.FAQ: f"Great question! {settings.gym_name} is open 6 AM - 10 PM. For pricing and location details, reply 'pricing' or 'location'.",
-            Intent.HUMAN_HELP: "I'm passing this to a human manager. They will text you shortly. 🙏",
-            Intent.GREETING: f"Hey there! 👋 Welcome to {settings.gym_name}! What can I help you with today?",
+            Intent.NEW_LEAD: f"Welcome to {settings.gym_name}! 👋 I'm your virtual assistant. I can help with workouts, diet plans, and class bookings!",
+            Intent.BOOKING: "I'd love to help you book a class! 📅 Which class interests you? Reply 'book' to see options!",
+            Intent.FAQ: f"I can help you with workouts, diet plans, and progress tracking! For specific gym details like pricing or location, please contact our team. What fitness topic can I help with? 💪",
+            Intent.HUMAN_HELP: "I'm passing this to our team. Someone will contact you shortly. 🙏",
+            Intent.GREETING: f"Hey there! 👋 Welcome to {settings.gym_name}! I can help with workouts, diet, and bookings. What would you like to know?",
             Intent.WORKOUT: "Ready to crush it! 💪 Reply 'workout' to get today's personalized workout plan!",
             Intent.DIET: "Let's fuel that body right! 🥗 Reply 'diet' for your personalized meal plan!",
             Intent.PROGRESS: "Let's check your progress! 📊 Reply 'stats' to see how far you've come!",

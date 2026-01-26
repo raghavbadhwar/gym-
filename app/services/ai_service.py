@@ -88,6 +88,10 @@ REQUIREMENTS:
 3. Provide clear exercise instructions
 4. Balance muscle groups properly
 5. Include rest days appropriately
+6. ONLY suggest exercises that are safe and commonly known
+7. DO NOT invent exercise names or techniques
+8. DO NOT make medical claims or promises about results
+9. DO NOT suggest exercises that require specialized equipment unless specified in available equipment
 
 Return ONLY valid JSON in this exact format:
 {{
@@ -196,6 +200,12 @@ REQUIREMENTS:
 4. Practical and easy to follow
 5. Include hydration recommendations
 6. Suggest affordable, locally available foods
+7. Plan should be realistic and healthy for {goal}
+8. DO NOT make unrealistic promises about results
+9. DO NOT suggest extreme calorie restrictions (minimum 1200 for weight loss)
+10. DO NOT recommend medications or medical supplements
+11. DO NOT make medical claims
+12. ONLY suggest foods that are commonly available in India
 
 Return ONLY valid JSON in this exact format:
 {{
