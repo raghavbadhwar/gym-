@@ -2,12 +2,10 @@
 WhatsApp Service - Handle all WhatsApp Business API interactions
 """
 import httpx
-import logging
+from loguru import logger
 from typing import Optional, List, Dict, Any
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class WhatsAppService:
@@ -268,17 +266,21 @@ class WhatsAppService:
         Internal method to send API request.
         """
         try:
-            async with httpx.AsyncClient() as client:
+            # Configure timeout to prevent hanging on network issues
+            timeout = httpx.Timeout(30.0, connect=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(
                     self.messages_url,
                     json=payload,
-                    headers=self.headers,
-                    timeout=30.0
+                    headers=self.headers
                 )
                 response.raise_for_status()
                 result = response.json()
                 logger.info(f"Message sent successfully: {result}")
                 return result
+        except httpx.TimeoutException as e:
+            logger.error(f"WhatsApp API timeout: {e}")
+            raise
         except httpx.HTTPStatusError as e:
             logger.error(f"WhatsApp API error: {e.response.text}")
             raise

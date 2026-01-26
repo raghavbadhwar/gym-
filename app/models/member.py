@@ -34,7 +34,7 @@ class DietaryPreference(str, Enum):
     """Dietary preferences for meal plans"""
     VEG = "veg"
     NON_VEG = "non_veg"
-    EGGETARIAN = "eggetarian"
+    EGG_VEGETARIAN = "egg_vegetarian"  # Fixed typo: was EGGETARIAN
     VEGAN = "vegan"
 
 

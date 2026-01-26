@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
     whatsapp_business_account_id: str = ""
     whatsapp_access_token: str = ""
-    whatsapp_verify_token: str = "gymbuddy_verify_token_2026"
+    whatsapp_verify_token: str = ""  # Must be set via environment variable
     whatsapp_api_url: str = "https://graph.facebook.com/v18.0"
     
     # AI Configuration - Choose your provider
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     
     # App Settings
     app_env: str = "development"
-    app_secret_key: str = "change-this-secret-key-in-production"
+    app_secret_key: str = ""  # Must be set via environment variable for security
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
