@@ -12,6 +12,7 @@ from app.config import settings
 WHATSAPP_MAX_MESSAGE_LENGTH = 4096
 MAX_RETRIES = 3
 RETRY_DELAY = 1  # seconds
+MESSAGE_CHUNK_DELAY = 0.5  # seconds between multi-part messages
 
 
 class WhatsAppService:
@@ -95,7 +96,7 @@ class WhatsAppService:
                 else:
                     chunks[i] = f"_(...{i+1}/{len(chunks)})_\n\n" + chunks[i]
         
-        logger.info(f"Message split into {len(chunks)} chunk(s)")
+        logger.debug(f"Message split into {len(chunks)} chunk(s)")
         return chunks
     
     async def send_text(self, to: str, text: str) -> dict:
@@ -125,7 +126,7 @@ class WhatsAppService:
             
             # Add small delay between chunks to ensure order
             if i < len(chunks) - 1:
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(MESSAGE_CHUNK_DELAY)
         
         return result
     

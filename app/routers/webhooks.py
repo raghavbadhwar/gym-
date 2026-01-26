@@ -20,6 +20,7 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
 from app.flows.handlers import MessageHandler
+from app.models.message import Message
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
@@ -84,7 +85,6 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         # ===== IDEMPOTENCY CHECK =====
         # Check if we've already processed this message to prevent duplicates
         if message_id:
-            from app.models.message import Message
             existing = db.query(Message).filter(
                 Message.wa_message_id == message_id
             ).first()
