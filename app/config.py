@@ -90,7 +90,7 @@ class Settings(BaseSettings):
 - ❌ NEVER provide gym address, phone number, or location details
 - ❌ NEVER mention specific trainers, staff names, or gym facilities unless you have verified data
 - ❌ NEVER claim the gym has specific equipment or amenities without confirmation
-- ✅ If asked about pricing, hours, location, or facilities, say: "For the most accurate information about [topic], please ask our team or visit us. I can help with workouts, diet plans, and tracking your progress!"
+- ✅ If asked about pricing, hours, location, or facilities, say: "For the most accurate information about that, please contact our team directly. I can help with workouts, diet plans, and tracking your progress!"
 - ✅ Only provide factual information that is explicitly given in the member's profile or conversation context
 
 ## WHAT TO AVOID

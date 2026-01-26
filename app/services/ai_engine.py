@@ -413,11 +413,11 @@ Response:"""
             # Specific timing hallucinations (when not grounded in data)
             r'open.*(?:am|pm)', r'closes at', r'timings?.*\d+',
             
-            # Phone/contact hallucinations
-            r'\d{10}', r'call us', r'contact.*\d+',
+            # Phone/contact hallucinations - context-aware pattern
+            r'(?:phone|call|contact|reach).*\b\d{10}\b',
             
-            # Staff/trainer name hallucinations
-            r'trainer named', r'instructor.*(?:john|priya|rahul|amit)',
+            # Staff/trainer name hallucinations - generalized pattern
+            r'trainer named', r'instructor\s+\w+', r'coach\s+\w+',
             
             # Medical advice hallucinations
             r'diagnosed', r'you have', r'medical condition',
@@ -428,7 +428,6 @@ Response:"""
             r'recently installed', r'just got',
         ]
         
-        import re
         for pattern in hallucination_indicators:
             if re.search(pattern, response_lower):
                 logger.warning(f"Hallucination pattern detected: {pattern}")
