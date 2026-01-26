@@ -7,8 +7,9 @@ double-booking prevention as specified in requirements.
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy import and_, func
+from sqlalchemy.exc import OperationalError
 from loguru import logger
 
 from app.models.booking import Class, ClassBooking, BookingStatus
@@ -167,21 +168,25 @@ class BookingService:
         class_start = gym_class.scheduled_at
         class_end = class_start + timedelta(minutes=gym_class.duration_mins)
         
-        conflicting_booking = self.db.query(ClassBooking).join(Class).filter(
-            and_(
-                ClassBooking.member_id == member.id,
-                ClassBooking.status.in_([BookingStatus.BOOKED.value, BookingStatus.WAITLIST.value]),
-                Class.is_cancelled == False,
-                # Check for time overlap
-                Class.scheduled_at < class_end,  # Other class starts before this one ends
-                (Class.scheduled_at + func.make_interval(0, 0, 0, 0, 0, Class.duration_mins, 0)) > class_start  # Other class ends after this one starts
-            )
-        ).first()
+        try:
+            conflicting_booking = self.db.query(ClassBooking).join(Class).filter(
+                and_(
+                    ClassBooking.member_id == member.id,
+                    ClassBooking.status.in_([BookingStatus.BOOKED.value, BookingStatus.WAITLIST.value]),
+                    Class.is_cancelled == False,
+                    # Check for time overlap
+                    Class.scheduled_at < class_end,  # Other class starts before this one ends
+                    (Class.scheduled_at + func.make_interval(0, 0, 0, 0, 0, Class.duration_mins, 0)) > class_start  # Other class ends after this one starts
+                )
+            ).first()
+        except OperationalError:
+            # Handle databases (like SQLite) that don't support make_interval
+            conflicting_booking = None
         
         # Fallback for SQLite (doesn't have make_interval)
         if conflicting_booking is None:
             # Use Python-based check for SQLite compatibility
-            member_bookings = self.db.query(ClassBooking).join(Class).filter(
+            member_bookings = self.db.query(ClassBooking).join(Class).options(contains_eager(ClassBooking.gym_class)).filter(
                 and_(
                     ClassBooking.member_id == member.id,
                     ClassBooking.status.in_([BookingStatus.BOOKED.value, BookingStatus.WAITLIST.value]),
