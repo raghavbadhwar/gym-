@@ -7,6 +7,7 @@ Routes messages to appropriate flows based on:
 - Member status (new vs returning)
 """
 from typing import Dict, Any, Optional, Union
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from loguru import logger
 
@@ -56,10 +57,10 @@ class MessageHandler:
         logger.info(f"📨 Handling message from {phone}: {content[:50]}...")
         
         # Get or create member
-        member = self.member_service.get_by_phone(phone)
+        member = await run_in_threadpool(self.member_service.get_by_phone, phone)
         
         # Check if in active flow
-        conv_state = self.member_service.get_conversation_state(phone)
+        conv_state = await run_in_threadpool(self.member_service.get_conversation_state, phone)
         
         if conv_state and conv_state.current_flow:
             # Continue existing flow
@@ -88,7 +89,8 @@ class MessageHandler:
         logger.info(f"🆕 New lead detected: {phone}")
         
         # Create member with just phone
-        member = self.member_service.create(
+        member = await run_in_threadpool(
+            self.member_service.create,
             phone=phone,
             name=name if name != "Unknown" else "New Member"
         )
@@ -116,7 +118,7 @@ class MessageHandler:
             return "A manager is looking into your request. Is there anything else I can help with in the meantime? 🏋️"
         else:
             # Unknown flow, clear and handle normally
-            self.member_service.clear_conversation_state(message["from"])
+            await run_in_threadpool(self.member_service.clear_conversation_state, message["from"])
             return await self._handle_active_member(member, message)
     
     async def _handle_active_member(
@@ -294,19 +296,19 @@ Just ask! 😊"""
     
     async def _handle_get_workout(self, member) -> str:
         """Get today's workout for member."""
-        workout = self.workout_service.get_todays_workout(member)
+        workout = await run_in_threadpool(self.workout_service.get_todays_workout, member)
         
         if workout:
             return self.workout_service.format_workout_for_whatsapp(workout)
         
         # No workout plan - generate one
         plan = await self.workout_service.generate_plan(member, week_number=1)
-        workout = self.workout_service.get_todays_workout(member)
+        workout = await run_in_threadpool(self.workout_service.get_todays_workout, member)
         return self.workout_service.format_workout_for_whatsapp(workout)
     
     async def _handle_get_diet(self, member) -> str:
         """Get diet plan for member."""
-        plan = self.diet_service.get_current_plan(member.id)
+        plan = await run_in_threadpool(self.diet_service.get_current_plan, member.id)
         
         if plan:
             return self.diet_service.format_plan_for_whatsapp(plan)
@@ -317,12 +319,12 @@ Just ask! 😊"""
     
     async def _handle_progress(self, member) -> str:
         """Show progress summary."""
-        summary = self.workout_service.get_progress_summary(member)
+        summary = await run_in_threadpool(self.workout_service.get_progress_summary, member)
         return self.workout_service.format_progress_for_whatsapp(member, summary)
     
     async def _handle_cancel_booking(self, member) -> str:
         """Show bookings to cancel."""
-        bookings = self.booking_service.get_member_bookings(member)
+        bookings = await run_in_threadpool(self.booking_service.get_member_bookings, member)
         
         if not bookings:
             return "You don't have any upcoming bookings to cancel.\n\nSend *classes* to view the schedule!"
@@ -339,7 +341,8 @@ Just ask! 😊"""
             try:
                 weight = float(content.replace("kg", "").strip())
                 flow_data["weight"] = weight
-                self.member_service.set_conversation_state(
+                await run_in_threadpool(
+                    self.member_service.set_conversation_state,
                     member.phone, "checkin", "energy", flow_data
                 )
                 return {
@@ -364,7 +367,8 @@ Just ask! 😊"""
                     return "Please select an energy level or type a number 1-5"
             
             flow_data["energy"] = energy
-            self.member_service.set_conversation_state(
+            await run_in_threadpool(
+                self.member_service.set_conversation_state,
                 member.phone, "checkin", "compliance", flow_data
             )
             return {
@@ -384,7 +388,8 @@ Just ask! 😊"""
                 compliance = "mostly"
             
             # Record check-in
-            self.workout_service.record_checkin(
+            await run_in_threadpool(
+                self.workout_service.record_checkin,
                 member,
                 weight_kg=flow_data.get("weight"),
                 energy_level=flow_data.get("energy"),
@@ -392,10 +397,10 @@ Just ask! 😊"""
             )
             
             # Clear flow
-            self.member_service.clear_conversation_state(member.phone)
+            await run_in_threadpool(self.member_service.clear_conversation_state, member.phone)
             
             # Get progress summary
-            summary = self.workout_service.get_progress_summary(member)
+            summary = await run_in_threadpool(self.workout_service.get_progress_summary, member)
             
             return f"""✅ *Check-in Complete!*
 
