@@ -273,6 +273,20 @@ Return ONLY valid JSON:
             return {"intent": Intent.FAQ, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
         
+        # Cancel patterns
+        cancel_keywords = ["cancel", "unbook", "remove booking", "don't want"]
+        if any(k in message for k in cancel_keywords):
+            return {"intent": Intent.CANCEL, "confidence": 0.85, "entities": {},
+                    "requires_escalation": False, "ambiguous": False}
+
+        # Goal setting / Onboarding patterns - should trigger AI conversation
+        goal_keywords = ["goal", "want to", "like to", "lose weight", "lose kg", "gain muscle",
+                         "build muscle", "get fit", "be healthy", "my target", "kilos", "kgs",
+                         "didn't tell", "didnt tell", "haven't told", "havent told"]
+        if any(k in message for k in goal_keywords):
+            return {"intent": Intent.GENERAL, "confidence": 0.9, "entities": {},
+                    "requires_escalation": False, "ambiguous": False}  # High confidence = go to AI
+
         # Workout patterns
         workout_keywords = ["workout", "exercise", "routine", "training", "today's workout", "gym"]
         if any(k in message for k in workout_keywords):
@@ -290,20 +304,6 @@ Return ONLY valid JSON:
         if any(k in message for k in progress_keywords):
             return {"intent": Intent.PROGRESS, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
-        
-        # Cancel patterns
-        cancel_keywords = ["cancel", "unbook", "remove booking", "don't want"]
-        if any(k in message for k in cancel_keywords):
-            return {"intent": Intent.CANCEL, "confidence": 0.85, "entities": {},
-                    "requires_escalation": False, "ambiguous": False}
-        
-        # Goal setting / Onboarding patterns - should trigger AI conversation
-        goal_keywords = ["goal", "want to", "like to", "lose weight", "lose kg", "gain muscle", 
-                         "build muscle", "get fit", "be healthy", "my target", "kilos", "kgs",
-                         "didn't tell", "didnt tell", "haven't told", "havent told"]
-        if any(k in message for k in goal_keywords):
-            return {"intent": Intent.GENERAL, "confidence": 0.9, "entities": {},
-                    "requires_escalation": False, "ambiguous": False}  # High confidence = go to AI
         
         # Default to general with HIGH confidence - ALWAYS use AI for unknown messages
         return {"intent": Intent.GENERAL, "confidence": 0.9, "entities": {},
@@ -383,7 +383,7 @@ Response:"""
             return response
         except Exception as e:
             logger.error(f"Response generation failed: {e}")
-            return self._get_fallback_response(intent)
+            return self._get_fallback_response(intent, message=message)
     
     def _is_off_topic_response(self, response: str) -> bool:
         """Check if response strayed off-topic."""
