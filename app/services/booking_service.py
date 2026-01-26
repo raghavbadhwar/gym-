@@ -7,7 +7,7 @@ double-booking prevention as specified in requirements.
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 from sqlalchemy import and_, func
 from loguru import logger
 
@@ -324,7 +324,7 @@ class BookingService:
         upcoming_only: bool = True
     ) -> List[Dict[str, Any]]:
         """Get all bookings for a member."""
-        query = self.db.query(ClassBooking).join(Class).filter(
+        query = self.db.query(ClassBooking).join(ClassBooking.gym_class).options(contains_eager(ClassBooking.gym_class)).filter(
             ClassBooking.member_id == member.id
         )
         
