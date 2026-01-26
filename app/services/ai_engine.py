@@ -50,6 +50,56 @@ FRUSTRATION_INDICATORS = [
     "terrible service", "worst experience", "never again"
 ]
 
+# Rule-based classification constants
+GREETINGS = ["hi", "hello", "hey", "good morning", "good evening", "namaste", "hola"]
+INTRO_PATTERNS = ["i am ", "i'm ", "my name is ", "this is ", "call me "]
+BOOKING_KEYWORDS = ["book", "schedule", "reserve", "slot", "join class", "sign up for"]
+CLASS_TYPES_LIST = ["yoga", "hiit", "spin", "spinning", "strength", "zumba", "aerobics", "pilates", "boxing"]
+
+# Pre-compiled regex patterns for time extraction
+TIME_PATTERNS = [
+    re.compile(r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))", re.IGNORECASE),
+    re.compile(r"(morning|afternoon|evening)", re.IGNORECASE),
+    re.compile(r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)", re.IGNORECASE)
+]
+
+FAQ_KEYWORDS = ["price", "cost", "fee", "how much", "location", "where", "address",
+                "hours", "timing", "open", "close", "facilities", "membership",
+                "class schedule", "about classes", "types of classes"]
+
+CANCEL_KEYWORDS = ["cancel", "unbook", "remove booking", "don't want"]
+
+GOAL_KEYWORDS = ["goal", "want to", "like to", "lose weight", "lose kg", "gain muscle",
+                 "build muscle", "get fit", "be healthy", "my target", "kilos", "kgs",
+                 "didn't tell", "didnt tell", "haven't told", "havent told"]
+
+WORKOUT_KEYWORDS = ["workout", "exercise", "routine", "training", "today's workout", "gym"]
+
+DIET_KEYWORDS = ["diet", "meal", "food", "nutrition", "eat", "calories", "protein", "dinner", "lunch", "breakfast"]
+
+PROGRESS_KEYWORDS = ["progress", "stats", "weight", "streak", "how am i doing"]
+
+OFF_TOPIC_INDICATORS = [
+    "as an ai", "i cannot", "i don't have access to",
+    "weather", "stock", "news", "politics", "recipe"
+]
+
+# Booking parsing constants
+CLASS_TYPES_DICT = {
+    "yoga": ["yoga", "hatha", "vinyasa"],
+    "hiit": ["hiit", "high intensity", "interval"],
+    "spin": ["spin", "spinning", "cycle", "cycling"],
+    "strength": ["strength", "weight", "lifting", "weights"],
+    "zumba": ["zumba", "dance"],
+    "pilates": ["pilates", "core"],
+    "aerobics": ["aerobics", "cardio"]
+}
+
+DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+# Pre-compiled regex for booking time extraction
+BOOKING_TIME_REGEX = re.compile(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', re.IGNORECASE)
+
 
 class AIEngine:
     """
@@ -227,35 +277,24 @@ Return ONLY valid JSON:
     def _rule_based_classify(self, message: str) -> Dict[str, Any]:
         """Fallback rule-based intent classification."""
         # Greeting patterns (including introductions)
-        greetings = ["hi", "hello", "hey", "good morning", "good evening", "namaste", "hola"]
-        intro_patterns = ["i am ", "i'm ", "my name is ", "this is ", "call me "]
-        
-        is_greeting = any(g in message for g in greetings) and len(message.split()) <= 6
-        is_intro = any(p in message for p in intro_patterns) and len(message.split()) <= 6
+        is_greeting = any(g in message for g in GREETINGS) and len(message.split()) <= 6
+        is_intro = any(p in message for p in INTRO_PATTERNS) and len(message.split()) <= 6
         
         if is_greeting or is_intro:
             return {"intent": Intent.GREETING, "confidence": 0.8, "entities": {}, 
                     "requires_escalation": False, "ambiguous": False}
         
         # Booking patterns
-        booking_keywords = ["book", "schedule", "reserve", "slot", "join class", "sign up for"]
-        class_types = ["yoga", "hiit", "spin", "spinning", "strength", "zumba", "aerobics", "pilates", "boxing"]
-        
-        if any(k in message for k in booking_keywords):
+        if any(k in message for k in BOOKING_KEYWORDS):
             entities = {}
-            for ct in class_types:
+            for ct in CLASS_TYPES_LIST:
                 if ct in message:
                     entities["class_type"] = ct
                     break
             
-            # Try to extract time
-            time_patterns = [
-                r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))",
-                r"(morning|afternoon|evening)",
-                r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
-            ]
-            for pattern in time_patterns:
-                match = re.search(pattern, message, re.IGNORECASE)
+            # Try to extract time using pre-compiled patterns
+            for pattern in TIME_PATTERNS:
+                match = pattern.search(message)
                 if match:
                     if "am" in match.group() or "pm" in match.group():
                         entities["time"] = match.group()
@@ -266,42 +305,32 @@ Return ONLY valid JSON:
                     "requires_escalation": False, "ambiguous": not bool(entities)}
         
         # FAQ patterns
-        faq_keywords = ["price", "cost", "fee", "how much", "location", "where", "address",
-                        "hours", "timing", "open", "close", "facilities", "membership", 
-                        "class schedule", "about classes", "types of classes"]
-        if any(k in message for k in faq_keywords):
+        if any(k in message for k in FAQ_KEYWORDS):
             return {"intent": Intent.FAQ, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
         
         # Cancel patterns
-        cancel_keywords = ["cancel", "unbook", "remove booking", "don't want"]
-        if any(k in message for k in cancel_keywords):
+        if any(k in message for k in CANCEL_KEYWORDS):
             return {"intent": Intent.CANCEL, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
 
         # Goal setting / Onboarding patterns - should trigger AI conversation
-        goal_keywords = ["goal", "want to", "like to", "lose weight", "lose kg", "gain muscle",
-                         "build muscle", "get fit", "be healthy", "my target", "kilos", "kgs",
-                         "didn't tell", "didnt tell", "haven't told", "havent told"]
-        if any(k in message for k in goal_keywords):
+        if any(k in message for k in GOAL_KEYWORDS):
             return {"intent": Intent.GENERAL, "confidence": 0.9, "entities": {},
                     "requires_escalation": False, "ambiguous": False}  # High confidence = go to AI
 
         # Workout patterns
-        workout_keywords = ["workout", "exercise", "routine", "training", "today's workout", "gym"]
-        if any(k in message for k in workout_keywords):
+        if any(k in message for k in WORKOUT_KEYWORDS):
             return {"intent": Intent.WORKOUT, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
         
         # Diet patterns
-        diet_keywords = ["diet", "meal", "food", "nutrition", "eat", "calories", "protein", "dinner", "lunch", "breakfast"]
-        if any(k in message for k in diet_keywords):
+        if any(k in message for k in DIET_KEYWORDS):
             return {"intent": Intent.DIET, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
         
         # Progress patterns
-        progress_keywords = ["progress", "stats", "weight", "streak", "how am i doing"]
-        if any(k in message for k in progress_keywords):
+        if any(k in message for k in PROGRESS_KEYWORDS):
             return {"intent": Intent.PROGRESS, "confidence": 0.85, "entities": {},
                     "requires_escalation": False, "ambiguous": False}
         
@@ -387,12 +416,8 @@ Response:"""
     
     def _is_off_topic_response(self, response: str) -> bool:
         """Check if response strayed off-topic."""
-        off_topic_indicators = [
-            "as an ai", "i cannot", "i don't have access to",
-            "weather", "stock", "news", "politics", "recipe"
-        ]
         response_lower = response.lower()
-        return any(ind in response_lower for ind in off_topic_indicators)
+        return any(ind in response_lower for ind in OFF_TOPIC_INDICATORS)
     
     def _get_fallback_response(self, intent: Intent, message: str = "") -> str:
         """Get fallback response when AI is unavailable."""
@@ -508,17 +533,7 @@ If you cannot parse the details, return:
         }
         
         # Extract class type
-        class_types = {
-            "yoga": ["yoga", "hatha", "vinyasa"],
-            "hiit": ["hiit", "high intensity", "interval"],
-            "spin": ["spin", "spinning", "cycle", "cycling"],
-            "strength": ["strength", "weight", "lifting", "weights"],
-            "zumba": ["zumba", "dance"],
-            "pilates": ["pilates", "core"],
-            "aerobics": ["aerobics", "cardio"]
-        }
-        
-        for class_name, keywords in class_types.items():
+        for class_name, keywords in CLASS_TYPES_DICT.items():
             if any(kw in message_lower for kw in keywords):
                 result["class_name"] = class_name
                 break
@@ -533,8 +548,7 @@ If you cannot parse the details, return:
             date = (today + timedelta(days=1)).date()
         else:
             # Try to parse day names
-            days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-            for i, day in enumerate(days):
+            for i, day in enumerate(DAYS_OF_WEEK):
                 if day in message_lower:
                     # Find next occurrence of this day
                     current_weekday = today.weekday()
@@ -546,7 +560,7 @@ If you cannot parse the details, return:
         
         # Extract time
         time = None
-        time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', message_lower)
+        time_match = BOOKING_TIME_REGEX.search(message_lower)
         if time_match:
             hour = int(time_match.group(1))
             minute = int(time_match.group(2) or 0)
