@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.0-flash"  # Updated to latest model
     
+    # AI Response Limits
+    ai_max_tokens_json: int = 500  # For JSON responses (intent classification)
+    ai_max_tokens_text: int = 150  # For text responses (general chat)
+    
     # App Settings
     app_env: str = "development"
     app_secret_key: str = ""  # Must be set via environment variable for security

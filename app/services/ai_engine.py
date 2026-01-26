@@ -611,7 +611,7 @@ If you cannot parse the details, return:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=500
+                max_tokens=settings.ai_max_tokens_json
             )
             text = response.choices[0].message.content.strip()
         elif self._gemini_model:
@@ -642,7 +642,7 @@ If you cannot parse the details, return:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=150
+                max_tokens=settings.ai_max_tokens_text
             )
             return response.choices[0].message.content.strip()
         elif self._gemini_model:
