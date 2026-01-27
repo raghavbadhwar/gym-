@@ -1,5 +1,6 @@
 // ===== Configuration =====
 const API_BASE = 'http://localhost:8000';
+const API_KEY = 'change-this-api-key-in-production';
 
 // ===== Demo Chat Messages =====
 const demoResponses = {
@@ -179,7 +180,8 @@ async function sendMessage() {
         const response = await fetch(`${API_BASE}/api/v1/chat/message`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-API-Key': API_KEY
             },
             body: JSON.stringify({
                 phone: currentUserPhone,
@@ -225,7 +227,8 @@ async function onboardDemoUser(name, goal, diet, weight, targetWeight) {
         const response = await fetch(`${API_BASE}/api/v1/chat/onboard`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-API-Key': API_KEY
             },
             body: JSON.stringify({
                 phone: currentUserPhone,

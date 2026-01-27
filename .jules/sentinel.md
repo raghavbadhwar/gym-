@@ -1,0 +1,4 @@
+## 2026-01-27 - Unprotected API Endpoints in SPA Architecture
+**Vulnerability:** Critical API endpoints (`/members`, `/classes`, `/chat`) were completely unprotected, allowing full access to member data and AI operations.
+**Learning:** In Single Page Applications (SPAs) or static frontend demos talking directly to backend APIs without a user login flow (BFF), there is a tension between security and usability. Hardcoding secrets in the frontend is a vulnerability, but without a backend-for-frontend or auth flow, it's a common pattern in demos. Separating the "public access" key from the "signing secret" is a crucial mitigation to prevent compromising the server's cryptographic integrity.
+**Prevention:** Always implement at least a basic API key check for public APIs. Ensure "app secrets" used for signing/encryption are NEVER used as API keys or exposed to the client. Use `secrets.compare_digest` for string comparison to prevent timing attacks.
