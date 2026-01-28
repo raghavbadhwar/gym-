@@ -335,6 +335,16 @@ document.getElementById('simulatorModal').addEventListener('click', function (e)
     }
 });
 
+// ===== Keyboard navigation for command cards =====
+document.querySelectorAll('.command-card').forEach(card => {
+    card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.click();
+        }
+    });
+});
+
 // ===== Keyboard navigation for modal =====
 document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
