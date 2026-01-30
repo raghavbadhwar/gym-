@@ -164,12 +164,20 @@ let currentUserName = 'Demo User';
 async function sendMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
+    const sendBtn = document.querySelector('.send-btn');
 
     if (!text) return;
 
     // Add outgoing message
     addMessage('outgoing', input.value);
     input.value = '';
+
+    // Disable button and show loading state
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.style.opacity = '0.7';
+        sendBtn.style.cursor = 'not-allowed';
+    }
 
     // Add typing indicator
     addTypingIndicator();
@@ -215,6 +223,13 @@ async function sendMessage() {
             addMessage('incoming', demoResponse.messages[1].text + '\n\n_(Offline mode - using cached response)_');
         } else {
             addMessage('incoming', `⚠️ Cannot connect to AI. Make sure the server is running at ${API_BASE}\n\nRun: uvicorn app.main:app --reload --port 8000`);
+        }
+    } finally {
+        // Restore button state
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.style.opacity = '';
+            sendBtn.style.cursor = '';
         }
     }
 }
