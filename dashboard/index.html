@@ -99,7 +99,7 @@
                     </div>
                     <div class="chat-input-area">
                         <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-                        <button class="send-btn" onclick="sendMessage()">
+        <button class="send-btn" onclick="sendMessage()" aria-label="Send message">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                             </svg>
@@ -338,7 +338,7 @@
     <!-- Chat Simulator Modal -->
     <div class="modal" id="simulatorModal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeSimulator()">×</button>
+            <button class="modal-close" onclick="closeSimulator()" aria-label="Close simulator">×</button>
             <h2>WhatsApp Simulator</h2>
             <p>Send a test message to GymBuddy</p>
             <div class="simulator-form">
