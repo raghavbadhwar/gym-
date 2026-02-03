@@ -8,6 +8,7 @@ Routes messages to appropriate flows based on:
 """
 from typing import Dict, Any, Optional, Union
 from sqlalchemy.orm import Session
+from fastapi.concurrency import run_in_threadpool
 from loguru import logger
 
 from app.services.member_service import MemberService
@@ -56,10 +57,10 @@ class MessageHandler:
         logger.info(f"📨 Handling message from {phone}: {content[:50]}...")
         
         # Get or create member
-        member = self.member_service.get_by_phone(phone)
+        member = await run_in_threadpool(self.member_service.get_by_phone, phone)
         
         # Check if in active flow
-        conv_state = self.member_service.get_conversation_state(phone)
+        conv_state = await run_in_threadpool(self.member_service.get_conversation_state, phone)
         
         if conv_state and conv_state.current_flow:
             # Continue existing flow
@@ -88,7 +89,8 @@ class MessageHandler:
         logger.info(f"🆕 New lead detected: {phone}")
         
         # Create member with just phone
-        member = self.member_service.create(
+        member = await run_in_threadpool(
+            self.member_service.create,
             phone=phone,
             name=name if name != "Unknown" else "New Member"
         )
@@ -116,7 +118,7 @@ class MessageHandler:
             return "A manager is looking into your request. Is there anything else I can help with in the meantime? 🏋️"
         else:
             # Unknown flow, clear and handle normally
-            self.member_service.clear_conversation_state(message["from"])
+            await run_in_threadpool(self.member_service.clear_conversation_state, message["from"])
             return await self._handle_active_member(member, message)
     
     async def _handle_active_member(
