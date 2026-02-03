@@ -149,7 +149,7 @@ def update_member(phone: str, updates: MemberUpdate, db: Session = Depends(get_d
 
 
 @router.post("/{phone}/checkin")
-async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
+def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
     """Record a weekly check-in for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
@@ -178,7 +178,7 @@ async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depen
 
 
 @router.get("/{phone}/workout")
-async def get_todays_workout(phone: str, db: Session = Depends(get_db)):
+def get_todays_workout(phone: str, db: Session = Depends(get_db)):
     """Get today's workout for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
@@ -221,7 +221,7 @@ async def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{phone}/diet")
-async def get_diet_plan(phone: str, db: Session = Depends(get_db)):
+def get_diet_plan(phone: str, db: Session = Depends(get_db)):
     """Get current diet plan for a member."""
     member_service = MemberService(db)
     diet_service = DietService(db)
