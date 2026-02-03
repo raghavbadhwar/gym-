@@ -8,6 +8,7 @@ This provides a simple chat API that:
 4. Stores conversation history
 """
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
@@ -258,7 +259,7 @@ async def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
     # Generate plans
     try:
         workout_plan = await workout_service.generate_plan(member, week_number=1)
-        diet_plan = await diet_service.generate_plan(member, week_number=1)
+        diet_plan = await run_in_threadpool(diet_service.generate_plan, member, week_number=1)
         plans_generated = True
     except Exception as e:
         logger.error(f"Failed to generate plans: {e}")
@@ -354,7 +355,7 @@ async def _handle_intent(
         if not current_plan:
             # Generate new diet plan with AI
             logger.info(f"Generating new diet plan for {member.name}")
-            plan = await diet_service.generate_plan(member, week_number=1)
+            plan = await run_in_threadpool(diet_service.generate_plan, member, week_number=1)
             return diet_service.format_plan_for_whatsapp(plan)
         else:
             return diet_service.format_plan_for_whatsapp(current_plan)
