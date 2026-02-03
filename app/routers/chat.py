@@ -282,7 +282,7 @@ async def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
 
 
 @router.get("/member/{phone}")
-async def get_member_context(phone: str, db: Session = Depends(get_db)):
+def get_member_context(phone: str, db: Session = Depends(get_db)):
     """Get full member context for chat."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)

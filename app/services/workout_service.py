@@ -93,6 +93,18 @@ class WorkoutService:
         return self.db.query(WorkoutPlan).filter(
             WorkoutPlan.member_id == member_id
         ).order_by(WorkoutPlan.week_number.desc()).limit(limit).all()
+
+    def get_plan_summary(self, plan: WorkoutPlan) -> Dict[str, Any]:
+        """Get a summary of the workout plan."""
+        if not plan:
+            return None
+
+        return {
+            "focus": plan.plan_json.get("focus", "General Fitness"),
+            "days_per_week": plan.plan_json.get("total_days", 4),
+            "weekly_tips": plan.plan_json.get("weekly_tips", []),
+            "current_week": plan.week_number
+        }
     
     def get_todays_workout(self, member: Member) -> Optional[Dict[str, Any]]:
         """Get today's specific workout from current plan."""
