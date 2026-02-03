@@ -7,7 +7,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from datetime import date
 from uuid import UUID
-
 from app.database import get_db
 from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
@@ -149,7 +148,7 @@ def update_member(phone: str, updates: MemberUpdate, db: Session = Depends(get_d
 
 
 @router.post("/{phone}/checkin")
-async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
+def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
     """Record a weekly check-in for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
