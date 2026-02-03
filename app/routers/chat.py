@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime
 import json
+from fastapi.concurrency import run_in_threadpool
 
 from app.database import get_db
 from app.services.member_service import MemberService
@@ -208,7 +209,7 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
 
 
 @router.post("/onboard")
-async def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
+def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
     """
     Quick onboard a member with their preferences.
     
@@ -257,8 +258,8 @@ async def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
     
     # Generate plans
     try:
-        workout_plan = await workout_service.generate_plan(member, week_number=1)
-        diet_plan = await diet_service.generate_plan(member, week_number=1)
+        workout_plan = workout_service.generate_plan(member, week_number=1)
+        diet_plan = diet_service.generate_plan(member, week_number=1)
         plans_generated = True
     except Exception as e:
         logger.error(f"Failed to generate plans: {e}")
@@ -338,7 +339,7 @@ async def _handle_intent(
         if not current_plan:
             # Generate new plan with AI
             logger.info(f"Generating new workout plan for {member.name}")
-            plan = await workout_service.generate_plan(member, week_number=1)
+            plan = await run_in_threadpool(workout_service.generate_plan, member, week_number=1)
             return workout_service.format_workout_for_whatsapp(
                 workout_service.get_todays_workout(member)
             )
@@ -354,7 +355,7 @@ async def _handle_intent(
         if not current_plan:
             # Generate new diet plan with AI
             logger.info(f"Generating new diet plan for {member.name}")
-            plan = await diet_service.generate_plan(member, week_number=1)
+            plan = await run_in_threadpool(diet_service.generate_plan, member, week_number=1)
             return diet_service.format_plan_for_whatsapp(plan)
         else:
             return diet_service.format_plan_for_whatsapp(current_plan)
@@ -454,4 +455,3 @@ In the meantime, is there anything else I can help with?"""
             }
         )
         return response
-
