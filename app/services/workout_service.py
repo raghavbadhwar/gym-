@@ -23,7 +23,7 @@ class WorkoutService:
     def __init__(self, db: Session):
         self.db = db
     
-    async def generate_plan(
+    def generate_plan(
         self,
         member: Member,
         week_number: int = 1,
@@ -53,7 +53,7 @@ class WorkoutService:
         }.get(experience, 5)
         
         # Generate plan using AI
-        plan_json = await ai_service.generate_workout_plan(
+        plan_json = ai_service.generate_workout_plan(
             goal=goal,
             experience_level=experience,
             days_per_week=days_per_week,
