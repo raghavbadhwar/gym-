@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime
 import json
+import asyncio
 
 from app.database import get_db
 from app.services.member_service import MemberService
@@ -61,7 +62,7 @@ class MemberOnboard(BaseModel):
 # ========== Endpoints ==========
 
 @router.post("/message", response_model=ChatResponse)
-async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
+def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
     """
     Send a chat message and get AI-powered personalized response.
     
@@ -162,7 +163,7 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
         logger.warning(f"Could not load plans: {e}")
     
     # Classify intent
-    intent_result = await ai_engine.classify_intent(chat.message, is_new_user=is_new)
+    intent_result = asyncio.run(ai_engine.classify_intent(chat.message, is_new_user=is_new))
     intent = intent_result.get("intent", Intent.GENERAL)
     
     logger.info(f"Intent: {intent.value}, Confidence: {intent_result.get('confidence', 0)}")
@@ -177,7 +178,7 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
     db.add(user_conv)
     
     # Handle specific intents with real data
-    response = await _handle_intent(
+    response = asyncio.run(_handle_intent(
         intent=intent,
         message=chat.message,
         member=member,
@@ -185,7 +186,7 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
         workout_service=workout_service,
         diet_service=diet_service,
         db=db
-    )
+    ))
     
     # Save assistant response to conversation history
     assistant_conv = Conversation(
