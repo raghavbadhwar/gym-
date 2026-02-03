@@ -149,7 +149,7 @@ def update_member(phone: str, updates: MemberUpdate, db: Session = Depends(get_d
 
 
 @router.post("/{phone}/checkin")
-async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
+def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
     """Record a weekly check-in for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
@@ -178,7 +178,7 @@ async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depen
 
 
 @router.get("/{phone}/workout")
-async def get_todays_workout(phone: str, db: Session = Depends(get_db)):
+def get_todays_workout(phone: str, db: Session = Depends(get_db)):
     """Get today's workout for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
@@ -197,7 +197,7 @@ async def get_todays_workout(phone: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{phone}/workout/generate")
-async def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
+def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
     """Generate a new workout plan for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
@@ -210,7 +210,7 @@ async def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
     existing = workout_service.get_plan_history(member.id, limit=1)
     week_number = (existing[0].week_number + 1) if existing else 1
     
-    plan = await workout_service.generate_plan(member, week_number=week_number)
+    plan = workout_service.generate_plan(member, week_number=week_number)
     
     return {
         "message": "Workout plan generated",
@@ -221,7 +221,7 @@ async def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{phone}/diet")
-async def get_diet_plan(phone: str, db: Session = Depends(get_db)):
+def get_diet_plan(phone: str, db: Session = Depends(get_db)):
     """Get current diet plan for a member."""
     member_service = MemberService(db)
     diet_service = DietService(db)
@@ -240,7 +240,7 @@ async def get_diet_plan(phone: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{phone}/diet/generate")
-async def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
+def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
     """Generate a new diet plan for a member."""
     member_service = MemberService(db)
     diet_service = DietService(db)
@@ -253,7 +253,7 @@ async def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
     current = diet_service.get_current_plan(member.id)
     week_number = (current.week_number + 1) if current else 1
     
-    plan = await diet_service.generate_plan(member, week_number=week_number)
+    plan = diet_service.generate_plan(member, week_number=week_number)
     
     return {
         "message": "Diet plan generated",

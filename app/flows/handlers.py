@@ -8,6 +8,7 @@ Routes messages to appropriate flows based on:
 """
 from typing import Dict, Any, Optional, Union
 from sqlalchemy.orm import Session
+from fastapi.concurrency import run_in_threadpool
 from loguru import logger
 
 from app.services.member_service import MemberService
@@ -300,7 +301,7 @@ Just ask! 😊"""
             return self.workout_service.format_workout_for_whatsapp(workout)
         
         # No workout plan - generate one
-        plan = await self.workout_service.generate_plan(member, week_number=1)
+        plan = await run_in_threadpool(self.workout_service.generate_plan, member, week_number=1)
         workout = self.workout_service.get_todays_workout(member)
         return self.workout_service.format_workout_for_whatsapp(workout)
     
@@ -312,7 +313,7 @@ Just ask! 😊"""
             return self.diet_service.format_plan_for_whatsapp(plan)
         
         # Generate new plan
-        plan = await self.diet_service.generate_plan(member, week_number=1)
+        plan = await run_in_threadpool(self.diet_service.generate_plan, member, week_number=1)
         return self.diet_service.format_plan_for_whatsapp(plan)
     
     async def _handle_progress(self, member) -> str:

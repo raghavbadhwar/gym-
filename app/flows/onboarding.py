@@ -4,6 +4,7 @@ Onboarding Flow - New member onboarding via WhatsApp
 import logging
 from typing import Dict, Any, Optional, Union
 from sqlalchemy.orm import Session
+from fastapi.concurrency import run_in_threadpool
 
 from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
@@ -336,11 +337,11 @@ Let's get started!"""
         """Generate initial workout and diet plans for new member."""
         try:
             # Generate workout plan
-            await self.workout_service.generate_plan(member, week_number=1)
+            await run_in_threadpool(self.workout_service.generate_plan, member, week_number=1)
             logger.info(f"Generated workout plan for {member.phone}")
             
             # Generate diet plan
-            await self.diet_service.generate_plan(member, week_number=1)
+            await run_in_threadpool(self.diet_service.generate_plan, member, week_number=1)
             logger.info(f"Generated diet plan for {member.phone}")
             
         except Exception as e:
