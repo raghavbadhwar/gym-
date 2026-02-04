@@ -598,10 +598,13 @@ body {
     transition: all var(--transition-smooth);
 }
 
-.command-card:hover {
+.command-card:hover,
+.command-card:focus-visible {
     background: var(--bg-card-hover);
     border-color: var(--border-glow);
     transform: translateX(4px);
+    outline: 2px solid var(--border-glow);
+    outline-offset: 2px;
 }
 
 .cmd-icon {
