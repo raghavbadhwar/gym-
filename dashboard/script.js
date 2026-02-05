@@ -81,10 +81,22 @@ const demoResponses = {
 document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
+    initKeyboardAccessibility();
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
 });
+
+// ===== Keyboard Accessibility =====
+function initKeyboardAccessibility() {
+    document.addEventListener('keydown', (e) => {
+        // Trigger click on Enter or Space for role="button" elements
+        if (e.target.matches('[role="button"]') && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            e.target.click();
+        }
+    });
+}
 
 // ===== API Status Check =====
 async function checkApiStatus() {
