@@ -282,21 +282,30 @@ class MemberService:
         return q.offset(offset).limit(limit).all()
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        """
+        Get member statistics for dashboard.
+        Optimized to use a single GROUP BY query instead of multiple COUNT queries.
+        """
+        from sqlalchemy import func
+
+        # Single query to group by state
+        stats = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        counts = dict(stats)
+
+        # Calculate total from all groups found (including any not explicitly listed)
+        total = sum(counts.values())
+        active = counts.get(MemberState.ACTIVE, 0)
         
         return {
             "total": total,
             "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
+            "at_risk": counts.get(MemberState.AT_RISK, 0),
+            "dormant": counts.get(MemberState.DORMANT, 0),
+            "churned": counts.get(MemberState.CHURNED, 0),
+            "new": counts.get(MemberState.NEW, 0),
             "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
         }
     
