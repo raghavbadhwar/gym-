@@ -84,6 +84,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
+
+    // Add keyboard accessibility for command cards
+    document.querySelectorAll('.command-card').forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); // Prevent page scroll on Space
+                card.click();
+            }
+        });
+    });
 });
 
 // ===== API Status Check =====
