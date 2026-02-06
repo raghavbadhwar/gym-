@@ -50,6 +50,15 @@ FRUSTRATION_INDICATORS = [
     "terrible service", "worst experience", "never again"
 ]
 
+# Compiled regex patterns for performance
+TIME_PATTERNS = [
+    re.compile(r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))", re.IGNORECASE),
+    re.compile(r"(morning|afternoon|evening)", re.IGNORECASE),
+    re.compile(r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)", re.IGNORECASE)
+]
+
+BOOKING_TIME_REGEX = re.compile(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', re.IGNORECASE)
+
 
 class AIEngine:
     """
@@ -249,15 +258,11 @@ Return ONLY valid JSON:
                     break
             
             # Try to extract time
-            time_patterns = [
-                r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))",
-                r"(morning|afternoon|evening)",
-                r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
-            ]
-            for pattern in time_patterns:
-                match = re.search(pattern, message, re.IGNORECASE)
+            for pattern in TIME_PATTERNS:
+                match = pattern.search(message)
                 if match:
-                    if "am" in match.group() or "pm" in match.group():
+                    group_lower = match.group().lower()
+                    if "am" in group_lower or "pm" in group_lower:
                         entities["time"] = match.group()
                     else:
                         entities["date"] = match.group()
@@ -546,11 +551,11 @@ If you cannot parse the details, return:
         
         # Extract time
         time = None
-        time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', message_lower)
+        time_match = BOOKING_TIME_REGEX.search(message)
         if time_match:
             hour = int(time_match.group(1))
             minute = int(time_match.group(2) or 0)
-            period = time_match.group(3)
+            period = time_match.group(3).lower()
             
             if period == "pm" and hour != 12:
                 hour += 12

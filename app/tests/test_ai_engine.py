@@ -43,3 +43,19 @@ def test_rule_based_classify_goal_keywords():
     for msg in messages:
         result = ai._rule_based_classify(msg.lower())
         assert result["intent"] == Intent.GENERAL, f"Message '{msg}' classified as {result['intent']}"
+
+def test_rule_based_classify_booking():
+    ai = AIEngine()
+
+    # Test booking intent and entity extraction
+    message = "I want to book yoga tomorrow at 5pm"
+    result = ai._rule_based_classify(message)
+
+    assert result["intent"] == Intent.BOOKING
+    assert result["entities"]["class_type"] == "yoga"
+    assert result["entities"]["time"] == "5pm"
+
+    # Test uppercase input for robustness
+    result = ai._rule_based_classify("book yoga at 5PM")
+    assert result["intent"] == Intent.BOOKING
+    assert result["entities"]["time"] == "5PM"
