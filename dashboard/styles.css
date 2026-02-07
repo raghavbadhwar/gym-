@@ -1028,3 +1028,12 @@ body {
     0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
 }
+
+/* ===== Accessibility ===== */
+.command-card:focus-visible,
+.send-btn:focus-visible,
+.modal-close:focus-visible {
+    outline: 2px solid var(--whatsapp-green);
+    outline-offset: 4px;
+    box-shadow: 0 0 0 4px rgba(37, 211, 102, 0.2);
+}
