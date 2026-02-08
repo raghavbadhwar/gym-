@@ -81,6 +81,7 @@ const demoResponses = {
 document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
+    initCommandCards();
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
@@ -334,6 +335,22 @@ document.getElementById('simulatorModal').addEventListener('click', function (e)
         closeSimulator();
     }
 });
+
+// ===== Initialize Command Cards for Keyboard Accessibility =====
+function initCommandCards() {
+    const cards = document.querySelectorAll('.command-card');
+    cards.forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const cmd = card.getAttribute('data-cmd');
+                if (cmd) {
+                    simulateCommand(cmd);
+                }
+            }
+        });
+    });
+}
 
 // ===== Keyboard navigation for modal =====
 document.addEventListener('keydown', function (e) {
