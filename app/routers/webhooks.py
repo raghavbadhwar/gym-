@@ -19,6 +19,7 @@ from app.database import get_db
 from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
+from app.services.security import validate_whatsapp_signature
 from app.flows.handlers import MessageHandler
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
@@ -52,7 +53,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     WhatsApp webhook endpoint for receiving messages.
     
     Workflow:
-    1. Parse incoming message
+    1. Verify webhook signature
+    2. Parse incoming message
     2. Handle media (image/audio/video) with polite rejection
     3. Check for escalation triggers
     4. Classify intent
@@ -62,6 +64,11 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # ===== SECURITY CHECK =====
+        # Verify that the request actually came from Meta/WhatsApp
+        # This prevents attackers from injecting fake messages
+        await validate_whatsapp_signature(request, settings.whatsapp_app_secret)
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
