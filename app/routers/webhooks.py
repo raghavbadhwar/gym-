@@ -20,6 +20,7 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
 from app.flows.handlers import MessageHandler
+from app.services.security import validate_whatsapp_signature
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
@@ -61,6 +62,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # Verify the request signature
+    await validate_whatsapp_signature(request)
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
