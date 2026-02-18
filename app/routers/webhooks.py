@@ -9,7 +9,7 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
@@ -19,6 +19,7 @@ from app.database import get_db
 from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
+from app.services.security import validate_whatsapp_signature
 from app.flows.handlers import MessageHandler
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
@@ -47,20 +48,31 @@ async def verify_webhook(
 
 
 @router.post("/whatsapp")
-async def receive_message(request: Request, db: Session = Depends(get_db)):
+async def receive_message(
+    request: Request,
+    x_hub_signature_256: Optional[str] = Header(None, alias="X-Hub-Signature-256"),
+    db: Session = Depends(get_db)
+):
     """
     WhatsApp webhook endpoint for receiving messages.
     
     Workflow:
-    1. Parse incoming message
-    2. Handle media (image/audio/video) with polite rejection
-    3. Check for escalation triggers
-    4. Classify intent
-    5. Route to appropriate handler
-    6. Send response
+    1. Validate X-Hub-Signature-256
+    2. Parse incoming message
+    3. Handle media (image/audio/video) with polite rejection
+    4. Check for escalation triggers
+    5. Classify intent
+    6. Route to appropriate handler
+    7. Send response
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # 1. Validate Signature
+    body_bytes = await request.body()
+    if not validate_whatsapp_signature(body_bytes, x_hub_signature_256):
+        logger.warning(f"⛔ Request rejected due to invalid signature")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
