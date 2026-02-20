@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -46,6 +48,36 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
 
 
+async def validate_whatsapp_signature(request: Request):
+    """
+    Validate the incoming request signature from WhatsApp.
+    Security: CRITICAL for preventing spoofed messages.
+    """
+    if not settings.whatsapp_app_secret:
+        logger.critical("⚠️ WhatsApp App Secret is NOT set! Webhook is vulnerable to spoofing.")
+        return
+
+    signature = request.headers.get("X-Hub-Signature-256")
+    if not signature:
+        logger.warning("Webhook request missing signature")
+        raise HTTPException(status_code=403, detail="Missing signature")
+
+    # Get raw body (Starlette caches it, so this is safe)
+    body = await request.body()
+
+    # Calculate HMAC
+    expected_signature = hmac.new(
+        settings.whatsapp_app_secret.encode(),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+
+    # Compare
+    if not hmac.compare_digest(f"sha256={expected_signature}", signature):
+        logger.warning("Webhook signature mismatch! Potential attack.")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
+
 @router.post("/whatsapp")
 async def receive_message(request: Request, db: Session = Depends(get_db)):
     """
@@ -61,6 +93,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # Verify signature first
+    await validate_whatsapp_signature(request)
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
