@@ -11,8 +11,13 @@ from uuid import UUID
 from app.database import get_db
 from app.services.member_service import MemberService
 from app.services.booking_service import BookingService
+from app.auth import get_admin_api_key
 
-router = APIRouter(prefix="/api/v1/classes", tags=["Classes"])
+router = APIRouter(
+    prefix="/api/v1/classes",
+    tags=["Classes"],
+    dependencies=[Depends(get_admin_api_key)]
+)
 
 
 # ========== Pydantic Models ==========
