@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,22 +283,39 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # Optimize: Use a single query with GROUP BY instead of 6 separate queries
+        # This reduces database load significantly
+        stats = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
         
-        return {
-            "total": total,
-            "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
-            "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
+        # Initialize with defaults
+        result = {
+            "active": 0,
+            "at_risk": 0,
+            "dormant": 0,
+            "churned": 0,
+            "new": 0,
+            "total": 0
         }
+
+        total_count = 0
+        for state, count in stats:
+            total_count += count
+            # state is an Enum object, need its value
+            state_val = state.value if hasattr(state, "value") else state
+            if state_val in result:
+                result[state_val] = count
+
+        result["total"] = total_count
+
+        # Calculate retention rate
+        if total_count > 0:
+            result["retention_rate"] = round((result["active"] / total_count) * 100, 1)
+        else:
+            result["retention_rate"] = 0
+
+        return result
     
     def get_conversation_history(
         self,
