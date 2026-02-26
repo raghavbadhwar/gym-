@@ -341,3 +341,11 @@ document.addEventListener('keydown', function (e) {
         closeSimulator();
     }
 });
+
+// ===== Handle Command Card Key Press =====
+function handleCardKey(event, cmd) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); // Prevent scrolling for Space
+        simulateCommand(cmd);
+    }
+}
