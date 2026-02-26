@@ -97,9 +97,9 @@ export function matchCredentialsToRequest(
   }
 
   return all.filter((record) =>
-    definition.input_descriptors.some((descriptor: any) => {
+    definition.input_descriptors.some((descriptor: { constraints?: { fields?: { path?: string[] }[] } }) => {
       if (!descriptor.constraints?.fields) return true;
-      return descriptor.constraints.fields.every((field: any) => {
+      return descriptor.constraints.fields.every((field: { path?: string[] }) => {
         if (!Array.isArray(field.path)) return true;
         return field.path.some((p: string) => {
           const key = p.replace(/^\$\./, '');
