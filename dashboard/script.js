@@ -81,6 +81,7 @@ const demoResponses = {
 document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
+    initKeyboardControls();
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
@@ -116,6 +117,19 @@ function initChat() {
 
     // Initial welcome message
     addMessage('incoming', '👋 Welcome to *FitZone Gym*!\n\nI\'m GymBuddy, your AI assistant. Try typing:\n• hi\n• workout\n• diet\n• book\n• help');
+}
+
+// ===== Initialize Keyboard Controls =====
+function initKeyboardControls() {
+    const cards = document.querySelectorAll('.command-card');
+    cards.forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
 }
 
 // ===== Add Message to Chat =====
