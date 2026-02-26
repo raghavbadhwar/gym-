@@ -176,6 +176,10 @@ const SUSPICIOUS_PATTERNS = [
     /eval\s*\(/gi,                           // eval() calls
     /expression\s*\(/gi,                     // CSS expression
     /\.\.\//g,                               // Path traversal
+    /\x00/g,                                 // Null byte injection
+    /\r\n|\r/g,                              // CRLF injection (header splitting)
+    /\bldap:\/\//gi,                         // LDAP injection
+    /\bfile:\/\//gi,                         // Local file access via file:// protocol
 ];
 
 /**

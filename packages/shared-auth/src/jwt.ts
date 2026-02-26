@@ -19,6 +19,8 @@ let config: AuthConfig = {
     app: 'unknown',
 };
 
+const MIN_SECRET_LENGTH = 32;
+
 /**
  * Initialize auth configuration
  */
@@ -34,6 +36,12 @@ export function initAuth(authConfig: Partial<AuthConfig>): void {
         }
         if (!config.jwtRefreshSecret || config.jwtRefreshSecret === 'dev-only-refresh-secret-not-for-production') {
             throw new Error('SECURITY CRITICAL: JWT_REFRESH_SECRET must be set to a strong value in production.');
+        }
+        if (config.jwtSecret.length < MIN_SECRET_LENGTH) {
+            throw new Error(`SECURITY CRITICAL: JWT_SECRET must be at least ${MIN_SECRET_LENGTH} characters long.`);
+        }
+        if (config.jwtRefreshSecret.length < MIN_SECRET_LENGTH) {
+            throw new Error(`SECURITY CRITICAL: JWT_REFRESH_SECRET must be at least ${MIN_SECRET_LENGTH} characters long.`);
         }
     } else {
         if (!authConfig.jwtSecret) {

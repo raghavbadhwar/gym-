@@ -100,14 +100,14 @@ app.use(cors({
 
 app.use(
   express.json({
-    limit: '10mb', // Prevent large payload DoS
+    limit: '2mb', // Prevent large payload DoS
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
   }),
 );
 
-app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '2mb' }));
 
 // Advanced security middleware
 app.use(requestIdMiddleware);           // Add request ID for audit logging

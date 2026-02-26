@@ -5,31 +5,41 @@ services:
     image: postgres:15-alpine
     container_name: gymbuddy_postgres
     environment:
-      POSTGRES_USER: gymbuddy
-      POSTGRES_PASSWORD: gymbuddy123
-      POSTGRES_DB: gymbuddy
+      POSTGRES_USER: ${POSTGRES_USER:-gymbuddy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-credverse}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gymbuddy"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gymbuddy}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/postgresql
 
   redis:
     image: redis:7-alpine
     container_name: gymbuddy_redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env} --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
 
 volumes:
   postgres_data:
