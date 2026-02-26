@@ -604,6 +604,12 @@ body {
     transform: translateX(4px);
 }
 
+.command-card:focus-visible {
+    outline: 2px solid var(--whatsapp-green);
+    outline-offset: 2px;
+    border-color: var(--border-glow);
+}
+
 .cmd-icon {
     font-size: 32px;
 }
