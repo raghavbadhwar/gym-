@@ -20,6 +20,7 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
 from app.flows.handlers import MessageHandler
+from app.services.security import validate_whatsapp_signature
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
@@ -46,7 +47,7 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
 
 
-@router.post("/whatsapp")
+@router.post("/whatsapp", dependencies=[Depends(validate_whatsapp_signature)])
 async def receive_message(request: Request, db: Session = Depends(get_db)):
     """
     WhatsApp webhook endpoint for receiving messages.
