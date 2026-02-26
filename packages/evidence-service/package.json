@@ -1,0 +1,20 @@
+{
+  "name": "@credverse/evidence-service",
+  "version": "0.1.0",
+  "description": "Evidence analysis pipeline: pluggable OCR engines, document verification, risk scoring",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}
