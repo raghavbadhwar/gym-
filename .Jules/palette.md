@@ -1,0 +1,3 @@
+## 2024-05-23 - [Keyboard Accessibility for Interactive Divs]
+**Learning:** Legacy "div buttons" (divs with onclick) are a common pattern that breaks accessibility. Simply adding `role="button"` and `tabindex="0"` is not enough; you MUST add keyboard event listeners (Enter/Space) to trigger the action, as browsers don't do this automatically for non-button elements.
+**Action:** When refactoring interactive divs, always implement a `keydown` handler that checks for `Enter` and `Space` keys and triggers the click handler or the underlying function. Also ensure `:focus-visible` styles are added for visual feedback.
