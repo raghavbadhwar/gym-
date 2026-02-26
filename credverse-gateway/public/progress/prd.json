@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-02-17T12:35:38.152Z",
+  "totalFeatures": 14,
+  "achievedScore": 2,
+  "prdCompletionPct": 14.3,
+  "mappedEvidenceFeatures": 4,
+  "items": [
+    {
+      "name": "User Onboarding & Authentication",
+      "status": "PARTIAL"
+    },
+    {
+      "name": "Identity Verification (Complete Flow)",
+      "status": "PARTIAL"
+    },
+    {
+      "name": "Reputation Rail (Cross-Platform Trust) 🆕",
+      "status": "PARTIAL"
+    },
+    {
+      "name": "SafeDate Score (Dating Safety Layer)",
+      "status": "PARTIAL"
+    },
+    {
+      "name": "Gig Economy Onboarding Acceleration",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "WorkScore (Comprehensive Employment Verification)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "TenantScore (Rental Housing Verification)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "HealthScore (Healthcare/Telemedicine Trust)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "TutorScore (Education Marketplace Verification)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "HomeWorkerScore (Domestic Services Verification)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "TrustScore for Lending (Alternative Credit)",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "Trust Score Calculation",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "Credential Management",
+      "status": "NOT_STARTED"
+    },
+    {
+      "name": "Platform Connections",
+      "status": "NOT_STARTED"
+    }
+  ]
+}

@@ -22,3 +22,59 @@ logs/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# CredVerse / Node.js additions
+# OS
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.next/
+out/
+.cache/
+
+# Environment & secrets
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+!.env.launch.example
+
+# Keys / certs
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local/editor files
+*.swp
+*.swo
+
+# Temporary and backups
+tmp/
+temp/
+cr_backup/
+
+# Tooling/state backups from legacy imports
+**/.git_backup/
+**/.local/
+**/.expo/
+**/.replit
+**/.npmrc
+**/attached_assets/
+
+# Contract build artifacts
+**/contracts/artifacts/
+**/contracts/cache/
