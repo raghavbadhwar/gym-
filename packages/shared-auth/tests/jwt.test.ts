@@ -182,7 +182,7 @@ describe('JWT Utilities', () => {
 
             expect(() => {
                 initAuth({
-                    jwtSecret: 'strong-secret',
+                    jwtSecret: 'strong-secret-that-is-at-least-32-chars-long!',
                     jwtRefreshSecret: 'dev-only-refresh-secret-not-for-production'
                 });
             }).toThrow(/SECURITY CRITICAL/);
@@ -193,8 +193,8 @@ describe('JWT Utilities', () => {
 
             expect(() => {
                 initAuth({
-                    jwtSecret: 'strong-secret-123',
-                    jwtRefreshSecret: 'strong-refresh-secret-123'
+                    jwtSecret: 'strong-secret-that-is-at-least-32-chars-long!',
+                    jwtRefreshSecret: 'strong-refresh-that-is-at-least-32-chars!'
                 });
             }).not.toThrow();
         });
@@ -210,6 +210,28 @@ describe('JWT Utilities', () => {
             initAuth({});
 
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('WARNING: Using development JWT secrets'));
+        });
+
+        it('should throw error in production if JWT_SECRET is too short', () => {
+            vi.stubEnv('NODE_ENV', 'production');
+
+            expect(() => {
+                initAuth({
+                    jwtSecret: 'short-but-not-default',
+                    jwtRefreshSecret: 'strong-refresh-that-is-at-least-32-chars!'
+                });
+            }).toThrow(/at least 32 characters/);
+        });
+
+        it('should throw error in production if JWT_REFRESH_SECRET is too short', () => {
+            vi.stubEnv('NODE_ENV', 'production');
+
+            expect(() => {
+                initAuth({
+                    jwtSecret: 'strong-secret-that-is-at-least-32-chars-long!',
+                    jwtRefreshSecret: 'short-refresh'
+                });
+            }).toThrow(/at least 32 characters/);
         });
     });
 });

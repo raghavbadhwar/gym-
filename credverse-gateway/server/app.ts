@@ -13,7 +13,7 @@ export function createGatewayApp() {
   const app = express();
 
   setupSecurity(app, {
-    allowedOrigins: [
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:5173',
       'http://localhost:5000',
       'http://localhost:5001',

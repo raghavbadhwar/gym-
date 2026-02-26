@@ -32,7 +32,7 @@ export const apiRateLimiter = rateLimit({
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10, // stricter for auth
+  max: 5, // strict for auth — 5 failed attempts per window
   message: {
     error:
       "Too many authentication attempts, please try again after 15 minutes",
@@ -98,6 +98,10 @@ const SUSPICIOUS_PATTERNS = [
   /eval\s*\(/gi, // eval() calls
   /expression\s*\(/gi, // CSS expression
   /\.\.\//g, // Path traversal
+  /\x00/g, // Null byte injection
+  /\r\n|\r/g, // CRLF injection (header splitting)
+  /\bldap:\/\//gi, // LDAP injection
+  /\bfile:\/\//gi, // Local file access via file:// protocol
 ];
 
 export function suspiciousRequestDetector(
@@ -149,13 +153,20 @@ export function setupSecurity(app: Application, config: SecurityConfig = {}) {
     }),
   );
 
-  // 2. CORS
+  // 2. CORS — never fall back to permissive `origin: true` in production
+  const origins =
+    config.allowedOrigins ||
+    process.env.ALLOWED_ORIGINS?.split(",");
+
+  if (!isDev && (!origins || origins.length === 0)) {
+    console.warn(
+      "[SECURITY] No ALLOWED_ORIGINS configured in production. CORS will reject cross-origin requests.",
+    );
+  }
+
   app.use(
     cors({
-      origin:
-        config.allowedOrigins ||
-        process.env.ALLOWED_ORIGINS?.split(",") ||
-        true,
+      origin: origins || (isDev ? true : false),
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: [
@@ -190,6 +201,24 @@ export function setupSecurity(app: Application, config: SecurityConfig = {}) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (req as any).id = requestId;
     res.setHeader("X-Request-ID", requestId);
+    next();
+  });
+
+  // 7. Additional security headers (Permissions-Policy, Cache-Control for API)
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=(), payment=()",
+    );
+
+    // Prevent caching of API responses
+    if (req.path.startsWith("/api")) {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate",
+      );
+      res.setHeader("Pragma", "no-cache");
+    }
     next();
   });
 }

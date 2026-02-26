@@ -87,4 +87,48 @@ describe("suspiciousRequestDetector", () => {
     expect(res.status).toHaveBeenCalledWith(403);
     expect(next).not.toHaveBeenCalled();
   });
+
+  it("should block null byte injection", () => {
+    const req = mockReq({ filename: "file\x00.txt" });
+    const res = mockRes();
+    const next = vi.fn() as NextFunction;
+
+    suspiciousRequestDetector(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should block LDAP injection attempts", () => {
+    const req = mockReq({ query: "ldap://evil.com/dc=example" });
+    const res = mockRes();
+    const next = vi.fn() as NextFunction;
+
+    suspiciousRequestDetector(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should block file:// protocol access", () => {
+    const req = mockReq({ url: "file:///etc/passwd" });
+    const res = mockRes();
+    const next = vi.fn() as NextFunction;
+
+    suspiciousRequestDetector(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("should allow clean requests through", () => {
+    const req = mockReq({ name: "John Doe", email: "john@example.com" });
+    const res = mockRes();
+    const next = vi.fn() as NextFunction;
+
+    suspiciousRequestDetector(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
 });

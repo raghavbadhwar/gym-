@@ -1,0 +1,10 @@
+# CredVerse Security Policy
+# https://securitytxt.org/
+
+Contact: mailto:security@credverse.io
+Preferred-Languages: en
+Canonical: https://credverse.io/.well-known/security.txt
+Policy: https://credverse.io/security-policy
+
+# Please report any security vulnerabilities responsibly.
+# We appreciate your efforts to make CredVerse safer.
