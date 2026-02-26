@@ -7,7 +7,7 @@ double-booking prevention as specified in requirements.
 from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func
 from loguru import logger
 
@@ -326,7 +326,7 @@ class BookingService:
         """Get all bookings for a member."""
         query = self.db.query(ClassBooking).join(Class).filter(
             ClassBooking.member_id == member.id
-        )
+        ).options(joinedload(ClassBooking.gym_class))
         
         if upcoming_only:
             query = query.filter(
