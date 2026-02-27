@@ -4,6 +4,6 @@ This repository contains the CredVerse ecosystem codebase (Issuer, Recruiter, Wa
 
 For full project documentation, use:
 
-- [CREDITY_README.md](./CREDITY_README.md)
-- [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-- [DEPLOYMENT.md](./DEPLOYMENT.md)
+- [CREDVERSE_README.md](./CREDVERSE_README.md) - CredVerse ecosystem overview and architecture.
+- [SETUP_GUIDE.md](./SETUP_GUIDE.md) - Installation and local environment setup steps.
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment configuration and runbook.
