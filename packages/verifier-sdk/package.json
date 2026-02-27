@@ -1,0 +1,23 @@
+{
+  "name": "@credverse/verifier-sdk",
+  "version": "0.1.0",
+  "description": "OpenID4VP verification flows, OPA-style policy engine, and signed verification receipts",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@credverse/trust-core": "file:../trust-core"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
+}
