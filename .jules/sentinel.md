@@ -1,0 +1,4 @@
+## 2025-02-28 - Missing API Key Authentication on Admin Endpoints
+**Vulnerability:** Admin endpoints for retrieving all members and member stats (`list_members` and `get_member_stats`) were accessible without any authentication. This exposed sensitive PII data.
+**Learning:** All endpoints that expose sensitive data or administrative functionality must have an explicit authentication dependency (e.g., API key validation) in the FastAPI router or endpoint definition.
+**Prevention:** Always define an authentication dependency (like `Depends(get_admin_api_key)`) for sensitive endpoints and use `secrets.compare_digest` to prevent timing attacks. Additionally, implement a 'Fail Secure' strategy where missing critical configurations like an API key cause a complete failure rather than allowing insecure access.
