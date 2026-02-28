@@ -98,8 +98,8 @@
                         <!-- Messages will be added here -->
                     </div>
                     <div class="chat-input-area">
-                        <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
-                        <button class="send-btn" onclick="sendMessage()">
+                        <input type="text" id="chatInput" placeholder="Type a message..." aria-label="Chat message" onkeypress="handleKeyPress(event)">
+                        <button class="send-btn" aria-label="Send message" onclick="sendMessage()">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
                             </svg>
@@ -338,12 +338,12 @@
     <!-- Chat Simulator Modal -->
     <div class="modal" id="simulatorModal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeSimulator()">×</button>
+            <button class="modal-close" aria-label="Close modal" onclick="closeSimulator()">×</button>
             <h2>WhatsApp Simulator</h2>
             <p>Send a test message to GymBuddy</p>
             <div class="simulator-form">
-                <input type="text" id="testPhone" placeholder="+919876543210" value="+919876543210">
-                <input type="text" id="testMessage" placeholder="Type your message...">
+                <input type="text" id="testPhone" aria-label="Test phone number" placeholder="+919876543210" value="+919876543210">
+                <input type="text" id="testMessage" aria-label="Test message" placeholder="Type your message...">
                 <button class="btn-primary" onclick="sendTestMessage()">Send via API</button>
             </div>
             <div class="simulator-response" id="simulatorResponse"></div>
