@@ -22,6 +22,13 @@ from app.services.ai_service import ai_service
 from app.services.ai_engine import ai_engine, Intent
 from app.config import settings
 from loguru import logger
+import re
+
+# Pre-compiled regex patterns for performance
+NAME_PATTERNS = [
+    re.compile(r"(?:i am|i'm|my name is|this is|call me)\s+([a-zA-Z]+)"),
+    re.compile(r"^([a-zA-Z]+)\s+here$"),
+]
 
 router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
 
@@ -94,13 +101,9 @@ async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
         logger.info(f"Created new member: {chat.phone}")
     
     # Extract name from message patterns like "hi i am raghav" or "my name is priya"
-    name_patterns = [
-        r"(?:i am|i'm|my name is|this is|call me)\s+([a-zA-Z]+)",
-        r"^([a-zA-Z]+)\s+here$",
-    ]
     extracted_name = None
-    for pattern in name_patterns:
-        match = re.search(pattern, chat.message.lower())
+    for pattern in NAME_PATTERNS:
+        match = pattern.search(chat.message.lower())
         if match:
             extracted_name = match.group(1).capitalize()
             break
