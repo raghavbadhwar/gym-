@@ -6,7 +6,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'BlockWalletDigi/**'
-      - 'CredVerseIssuer/**'
+      - 'CredVerseIssuer 3/**'
       - 'CredVerseRecruiter/**'
       - 'credverse-gateway/**'
       - 'apps/mobile/**'
@@ -18,7 +18,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'BlockWalletDigi/**'
-      - 'CredVerseIssuer/**'
+      - 'CredVerseIssuer 3/**'
       - 'CredVerseRecruiter/**'
       - 'credverse-gateway/**'
       - 'apps/mobile/**'
@@ -56,18 +56,18 @@ jobs:
               - 'package.json'
               - 'package-lock.json'
               - 'BlockWalletDigi/**'
-              - 'CredVerseIssuer/**'
+              - 'CredVerseIssuer 3/**'
               - 'CredVerseRecruiter/**'
               - 'credverse-gateway/**'
               - 'apps/mobile/**'
               - 'packages/shared-auth/**'
             contracts:
-              - 'CredVerseIssuer/contracts/**'
+              - 'CredVerseIssuer 3/contracts/**'
             wallet:
               - 'BlockWalletDigi/**'
             issuer:
-              - 'CredVerseIssuer/**'
-              - '!CredVerseIssuer/contracts/**'
+              - 'CredVerseIssuer 3/**'
+              - '!CredVerseIssuer 3/contracts/**'
             recruiter:
               - 'CredVerseRecruiter/**'
             gateway:
@@ -98,8 +98,8 @@ jobs:
             lockfile: BlockWalletDigi/package-lock.json
             command: npm run check
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/package-lock.json
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
             command: npm run check
           - key: recruiter
             path: CredVerseRecruiter
@@ -110,20 +110,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          npm install
+          npm ci
           npm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            npm install --legacy-peer-deps
+            npm ci --legacy-peer-deps
           else
-            npm install
+            npm ci
           fi
       - name: Type/build check gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
@@ -144,8 +146,8 @@ jobs:
             lockfile: BlockWalletDigi/package-lock.json
             command: npm test
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/package-lock.json
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
             command: npm test
           - key: recruiter
             path: CredVerseRecruiter
@@ -164,28 +166,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          npm install
+          npm ci
           npm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            npm install --legacy-peer-deps
+            npm ci --legacy-peer-deps
           else
-            npm install
+            npm ci
           fi
       - name: Install cross-service deps for recruiter e2e imports
         if: matrix.key == 'recruiter' && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         run: |
-          cd "CredVerseIssuer"
-          npm install --legacy-peer-deps
+          cd "CredVerseIssuer 3"
+          npm ci --legacy-peer-deps
           cd ../BlockWalletDigi
-          npm install
+          npm ci
       - name: Test gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
@@ -198,13 +202,15 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: CredVerseIssuer/contracts
+        working-directory: CredVerseIssuer 3/contracts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm install
+          cache: 'npm'
+          cache-dependency-path: CredVerseIssuer 3/contracts/package-lock.json
+      - run: npm ci
       - name: Solidity static analysis, compile, and contract tests
         run: npm run analyze:static
 
@@ -227,8 +233,8 @@ jobs:
             path: BlockWalletDigi
             lockfile: BlockWalletDigi/package-lock.json
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/package-lock.json
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
           - key: recruiter
             path: CredVerseRecruiter
             lockfile: CredVerseRecruiter/package-lock.json
@@ -239,21 +245,23 @@ jobs:
             path: apps/mobile
             lockfile: apps/mobile/package-lock.json
           - key: contracts
-            path: CredVerseIssuer/contracts
-            lockfile: CredVerseIssuer/contracts/package-lock.json
+            path: CredVerseIssuer 3/contracts
+            lockfile: CredVerseIssuer 3/contracts/package-lock.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ] || [ "${{ matrix.key }}" = "root" ]; then
-            npm install --legacy-peer-deps
+            npm ci --legacy-peer-deps
           else
-            npm install
+            npm ci
           fi
       - name: High/Critical dependency vulnerability gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
