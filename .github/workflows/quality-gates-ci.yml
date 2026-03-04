@@ -4,9 +4,9 @@ on:
   pull_request:
     paths:
       - 'package.json'
-      - 'pnpm-lock.yaml'
+      - 'package-lock.json'
       - 'BlockWalletDigi/**'
-      - 'CredVerseIssuer/**'
+      - 'CredVerseIssuer 3/**'
       - 'CredVerseRecruiter/**'
       - 'credverse-gateway/**'
       - 'apps/mobile/**'
@@ -16,9 +16,9 @@ on:
     branches: [main, master]
     paths:
       - 'package.json'
-      - 'pnpm-lock.yaml'
+      - 'package-lock.json'
       - 'BlockWalletDigi/**'
-      - 'CredVerseIssuer/**'
+      - 'CredVerseIssuer 3/**'
       - 'CredVerseRecruiter/**'
       - 'credverse-gateway/**'
       - 'apps/mobile/**'
@@ -54,20 +54,20 @@ jobs:
           filters: |
             quality:
               - 'package.json'
-              - 'pnpm-lock.yaml'
+              - 'package-lock.json'
               - 'BlockWalletDigi/**'
-              - 'CredVerseIssuer/**'
+              - 'CredVerseIssuer 3/**'
               - 'CredVerseRecruiter/**'
               - 'credverse-gateway/**'
               - 'apps/mobile/**'
               - 'packages/shared-auth/**'
             contracts:
-              - 'CredVerseIssuer/contracts/**'
+              - 'CredVerseIssuer 3/contracts/**'
             wallet:
               - 'BlockWalletDigi/**'
             issuer:
-              - 'CredVerseIssuer/**'
-              - '!CredVerseIssuer/contracts/**'
+              - 'CredVerseIssuer 3/**'
+              - '!CredVerseIssuer 3/contracts/**'
             recruiter:
               - 'CredVerseRecruiter/**'
             gateway:
@@ -78,7 +78,7 @@ jobs:
               - 'packages/shared-auth/**'
             root:
               - 'package.json'
-              - 'pnpm-lock.yaml'
+              - 'package-lock.json'
 
   check:
     needs: changes
@@ -91,44 +91,39 @@ jobs:
         include:
           - key: shared_auth
             path: packages/shared-auth
-            lockfile: packages/shared-auth/pnpm-lock.yaml
-            command: pnpm run build
+            lockfile: packages/shared-auth/package-lock.json
+            command: npm run build
           - key: wallet
             path: BlockWalletDigi
-            lockfile: BlockWalletDigi/pnpm-lock.yaml
-            command: pnpm run check
+            lockfile: BlockWalletDigi/package-lock.json
+            command: npm run check
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/pnpm-lock.yaml
-            command: pnpm run check
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
+            command: npm run check
           - key: recruiter
             path: CredVerseRecruiter
-            lockfile: CredVerseRecruiter/pnpm-lock.yaml
-            command: pnpm run check
+            lockfile: CredVerseRecruiter/package-lock.json
+            command: npm run check
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 10.28.0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          pnpm install
-          pnpm run build
+          npm ci
+          npm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            pnpm install
+            npm ci --legacy-peer-deps
           else
-            pnpm install
+            npm ci
           fi
       - name: Type/build check gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
@@ -146,56 +141,51 @@ jobs:
         include:
           - key: wallet
             path: BlockWalletDigi
-            lockfile: BlockWalletDigi/pnpm-lock.yaml
-            command: pnpm test
+            lockfile: BlockWalletDigi/package-lock.json
+            command: npm test
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/pnpm-lock.yaml
-            command: pnpm test
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
+            command: npm test
           - key: recruiter
             path: CredVerseRecruiter
-            lockfile: CredVerseRecruiter/pnpm-lock.yaml
-            command: pnpm test
+            lockfile: CredVerseRecruiter/package-lock.json
+            command: npm test
           - key: gateway
             path: credverse-gateway
-            lockfile: credverse-gateway/pnpm-lock.yaml
-            command: pnpm run test:proxy
+            lockfile: credverse-gateway/package-lock.json
+            command: npm run test:proxy
           - key: mobile
             path: apps/mobile
-            lockfile: apps/mobile/pnpm-lock.yaml
-            command: pnpm test
+            lockfile: apps/mobile/package-lock.json
+            command: npm test
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 10.28.0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          pnpm install
-          pnpm run build
+          npm ci
+          npm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            pnpm install
+            npm ci --legacy-peer-deps
           else
-            pnpm install
+            npm ci
           fi
       - name: Install cross-service deps for recruiter e2e imports
         if: matrix.key == 'recruiter' && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         run: |
-          cd "CredVerseIssuer"
-          pnpm install
+          cd "CredVerseIssuer 3"
+          npm ci --legacy-peer-deps
           cd ../BlockWalletDigi
-          pnpm install
+          npm ci
       - name: Test gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
@@ -208,20 +198,15 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: CredVerseIssuer/contracts
+        working-directory: CredVerseIssuer 3/contracts
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 10.28.0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: CredVerseIssuer/contracts/pnpm-lock.yaml
-      - run: pnpm install
+      - run: npm ci
       - name: Solidity static analysis, compile, and contract tests
-        run: pnpm run analyze:static
+        run: npm run analyze:static
 
   dependency-security:
     needs: changes
@@ -234,51 +219,46 @@ jobs:
         include:
           - key: root
             path: .
-            lockfile: pnpm-lock.yaml
+            lockfile: package-lock.json
           - key: shared_auth
             path: packages/shared-auth
-            lockfile: packages/shared-auth/pnpm-lock.yaml
+            lockfile: packages/shared-auth/package-lock.json
           - key: wallet
             path: BlockWalletDigi
-            lockfile: BlockWalletDigi/pnpm-lock.yaml
+            lockfile: BlockWalletDigi/package-lock.json
           - key: issuer
-            path: CredVerseIssuer
-            lockfile: CredVerseIssuer/pnpm-lock.yaml
+            path: CredVerseIssuer 3
+            lockfile: CredVerseIssuer 3/package-lock.json
           - key: recruiter
             path: CredVerseRecruiter
-            lockfile: CredVerseRecruiter/pnpm-lock.yaml
+            lockfile: CredVerseRecruiter/package-lock.json
           - key: gateway
             path: credverse-gateway
-            lockfile: credverse-gateway/pnpm-lock.yaml
+            lockfile: credverse-gateway/package-lock.json
           - key: mobile
             path: apps/mobile
-            lockfile: apps/mobile/pnpm-lock.yaml
+            lockfile: apps/mobile/package-lock.json
           - key: contracts
-            path: CredVerseIssuer/contracts
-            lockfile: CredVerseIssuer/contracts/pnpm-lock.yaml
+            path: CredVerseIssuer 3/contracts
+            lockfile: CredVerseIssuer 3/contracts/package-lock.json
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 10.28.0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: ${{ matrix.lockfile }}
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ] || [ "${{ matrix.key }}" = "root" ]; then
-            pnpm install
+            npm ci --legacy-peer-deps
           else
-            pnpm install
+            npm ci
           fi
       - name: High/Critical dependency vulnerability gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
-        run: pnpm audit --omit=dev --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
   evidence-pack:
     needs: [changes, check, test, contracts-security, dependency-security]
