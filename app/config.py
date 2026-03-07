@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
+    # Admin API Key
+    admin_api_key: Optional[str] = None
+
     # Escalation Settings (for HUMAN_HELP intent)
     manager_phone: str = ""  # Manager's WhatsApp for escalation
     escalation_email: str = ""  # Email for escalation notifications
