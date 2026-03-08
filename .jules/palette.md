@@ -1,0 +1,3 @@
+## 2024-03-08 - Added aria-label to icon-only buttons and inputs in Dashboard
+**Learning:** This app's custom UI elements, such as the WhatsApp Simulator modal and the mock chat interface, rely heavily on icon-only buttons and placeholder-only inputs for a clean aesthetic. This design pattern frequently omits visible labels, making ARIA attributes (`aria-label`) critical for ensuring the interface is accessible to screen readers without compromising the visual design.
+**Action:** When implementing new custom UI components or interactive widgets in this codebase, prioritize adding `aria-label` attributes to any interactive element (buttons, inputs) that lacks a visible text label, to maintain accessibility standards alongside the minimalist visual style.
