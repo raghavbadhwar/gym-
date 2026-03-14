@@ -30,9 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: |
-            credverse-gateway/package-lock.json
+
 
       - name: Install gateway deps
         working-directory: credverse-gateway
