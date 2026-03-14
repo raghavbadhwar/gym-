@@ -18,6 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm i -g pnpm
       - name: Launch gate docs/config checks (non-strict)
         run: node scripts/launch-gate-check.mjs
 

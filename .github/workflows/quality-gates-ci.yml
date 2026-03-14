@@ -92,38 +92,39 @@ jobs:
           - key: shared_auth
             path: packages/shared-auth
             lockfile: packages/shared-auth/package-lock.json
-            command: npm run build
+            command: pnpm run build
           - key: wallet
             path: BlockWalletDigi
             lockfile: BlockWalletDigi/package-lock.json
-            command: npm run check
+            command: pnpm run check
           - key: issuer
             path: CredVerseIssuer
             lockfile: CredVerseIssuer/package-lock.json
-            command: npm run check
+            command: pnpm run check
           - key: recruiter
             path: CredVerseRecruiter
             lockfile: CredVerseRecruiter/package-lock.json
-            command: npm run check
+            command: pnpm run check
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm i -g pnpm
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          npm ci
-          npm run build
+          pnpm install
+          pnpm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            npm ci --legacy-peer-deps
+            pnpm install --legacy-peer-deps
           else
-            npm ci
+            pnpm install
           fi
       - name: Type/build check gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
@@ -142,50 +143,51 @@ jobs:
           - key: wallet
             path: BlockWalletDigi
             lockfile: BlockWalletDigi/package-lock.json
-            command: npm test
+            command: pnpm test
           - key: issuer
             path: CredVerseIssuer
             lockfile: CredVerseIssuer/package-lock.json
-            command: npm test
+            command: pnpm test
           - key: recruiter
             path: CredVerseRecruiter
             lockfile: CredVerseRecruiter/package-lock.json
-            command: npm test
+            command: pnpm test
           - key: gateway
             path: credverse-gateway
             lockfile: credverse-gateway/package-lock.json
-            command: npm run test:proxy
+            command: pnpm run test:proxy
           - key: mobile
             path: apps/mobile
             lockfile: apps/mobile/package-lock.json
-            command: npm test
+            command: pnpm test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm i -g pnpm
       - name: Build shared-auth package for dependent services
         if: (matrix.key == 'wallet' || matrix.key == 'issuer' || matrix.key == 'recruiter') && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         working-directory: packages/shared-auth
         run: |
-          npm ci
-          npm run build
+          pnpm install
+          pnpm run build
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ]; then
-            npm ci --legacy-peer-deps
+            pnpm install --legacy-peer-deps
           else
-            npm ci
+            pnpm install
           fi
       - name: Install cross-service deps for recruiter e2e imports
         if: matrix.key == 'recruiter' && (needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch')
         run: |
           cd "CredVerseIssuer"
-          npm ci --legacy-peer-deps
+          pnpm install --legacy-peer-deps
           cd ../BlockWalletDigi
-          npm ci
+          pnpm install
       - name: Test gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
@@ -204,9 +206,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci
+      - run: npm i -g pnpm
+      - run: pnpm install
       - name: Solidity static analysis, compile, and contract tests
-        run: npm run analyze:static
+        run: pnpm run analyze:static
 
   dependency-security:
     needs: changes
@@ -246,19 +249,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - run: npm i -g pnpm
       - name: Install dependencies
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
         run: |
           if [ "${{ matrix.key }}" = "issuer" ] || [ "${{ matrix.key }}" = "root" ]; then
-            npm ci --legacy-peer-deps
+            pnpm install --legacy-peer-deps
           else
-            npm ci
+            pnpm install
           fi
       - name: High/Critical dependency vulnerability gate
         if: needs.changes.outputs[matrix.key] == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ matrix.path }}
-        run: npm audit --omit=dev --audit-level=high
+        run: pnpm audit --omit=dev --audit-level=high
 
   evidence-pack:
     needs: [changes, check, test, contracts-security, dependency-security]
