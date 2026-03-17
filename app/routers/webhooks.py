@@ -13,6 +13,9 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
+import secrets
 
 from app.config import settings
 from app.database import get_db
@@ -38,9 +41,11 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
-        logger.success("WhatsApp webhook verified successfully ✅")
-        return int(hub_challenge)
+    if hub_mode == "subscribe" and hub_verify_token and settings.whatsapp_verify_token:
+        # Use compare_digest to prevent timing attacks when comparing secrets
+        if secrets.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
+            logger.success("WhatsApp webhook verified successfully ✅")
+            return int(hub_challenge)
     
     logger.warning(f"Webhook verification failed! Token received: {hub_verify_token}")
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
@@ -52,7 +57,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     WhatsApp webhook endpoint for receiving messages.
     
     Workflow:
-    1. Parse incoming message
+    1. Verify X-Hub-Signature-256 for security
+    2. Parse incoming message
     2. Handle media (image/audio/video) with polite rejection
     3. Check for escalation triggers
     4. Classify intent
@@ -61,6 +67,28 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # ===== WEBHOOK SECURITY VALIDATION =====
+    if not settings.whatsapp_app_secret:
+        logger.critical("whatsapp_app_secret is not set! Cannot verify webhook signature.")
+        raise HTTPException(status_code=500, detail="Server misconfiguration")
+
+    signature = request.headers.get("X-Hub-Signature-256", "")
+    if not signature.startswith("sha256="):
+        logger.warning("Missing or invalid X-Hub-Signature-256 header")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
+    body = await request.body()
+    expected_hash = hmac.new(
+        settings.whatsapp_app_secret.encode("utf-8"),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    expected_signature = f"sha256={expected_hash}"
+
+    if not hmac.compare_digest(signature, expected_signature):
+        logger.warning(f"Signature mismatch! Expected: {expected_signature}, Got: {signature}")
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
