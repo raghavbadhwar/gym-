@@ -1,0 +1,3 @@
+## 2025-01-20 - Optimize MemberService.get_stats()
+**Learning:** Getting counts of multiple states via separate queries incurs the N+1 queries problem overhead. `MemberService.get_stats()` originally executed 6 different count queries to count different states (e.g. `total`, `ACTIVE`, `AT_RISK`, `DORMANT`, `CHURNED`, `NEW`). This means 6 database roundtrips.
+**Action:** Replace multiple count queries with a single query using `func.count(Member.id)` and `.group_by(Member.current_state)`. This reduces the number of queries to 1 and allows the database to aggregate counts efficiently in a single operation.
