@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -61,7 +63,35 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+
     try:
+        # ===== SIGNATURE VALIDATION =====
+        # Meta sends HMAC-SHA256 signature in the X-Hub-Signature-256 header
+        signature_header = request.headers.get("X-Hub-Signature-256")
+
+        if not signature_header:
+            logger.warning("Missing X-Hub-Signature-256 header")
+            raise HTTPException(status_code=401, detail="Missing signature")
+
+        if not settings.whatsapp_app_secret:
+            logger.error("whatsapp_app_secret is not configured")
+            raise HTTPException(status_code=500, detail="Server misconfiguration")
+
+        # Read raw body for validation
+        raw_body = await request.body()
+
+        # Calculate expected signature
+        expected_sig = "sha256=" + hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        # Use compare_digest to prevent timing attacks
+        if not hmac.compare_digest(signature_header, expected_sig):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +180,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTP exceptions to return correct status codes (401, 500)
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
