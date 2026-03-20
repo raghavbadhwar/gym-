@@ -13,6 +13,9 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import secrets
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -38,7 +41,7 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    if hub_mode == "subscribe" and hub_verify_token and secrets.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
@@ -62,6 +65,30 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # ===== SIGNATURE VALIDATION =====
+        if not settings.whatsapp_app_secret:
+            logger.error("whatsapp_app_secret is not configured")
+            raise HTTPException(status_code=500, detail="Server configuration error")
+
+        raw_body = await request.body()
+        signature_header = request.headers.get("x-hub-signature-256", "")
+
+        if not signature_header.startswith("sha256="):
+            logger.warning("Invalid or missing X-Hub-Signature-256 header")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+        signature = signature_header.split("sha256=")[1]
+
+        expected_signature = hmac.new(
+            settings.whatsapp_app_secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            logger.warning("Signature validation failed")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +177,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException as e:
+        # Re-raise intended HTTP errors to return fail-secure codes (e.g. 401, 500)
+        raise e
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
