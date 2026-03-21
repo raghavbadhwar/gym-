@@ -1,0 +1,3 @@
+## 2026-03-21 - Optimize Database `.count()` queries with `func.count()` and `.group_by()`
+**Learning:** Making separate database queries for aggregates (like `.count()`) for each possible state value is an anti-pattern that creates multiple database roundtrips, increasing latency. For example, fetching 5 different state counts resulted in 6 separate SQL `COUNT` queries.
+**Action:** When calculating statistics across different states or categories, replace multiple `.count()` queries with a single `.group_by()` query and `func.count()`. The result set can be processed in-memory (using generators/iterations) to derive specific group counts, reducing database load and network calls to exactly 1 query.
