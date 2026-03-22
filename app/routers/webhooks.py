@@ -13,6 +13,9 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
+import secrets
 
 from app.config import settings
 from app.database import get_db
@@ -62,6 +65,30 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # ===== SIGNATURE VERIFICATION =====
+        if not settings.whatsapp_app_secret:
+            logger.error("whatsapp_app_secret is not configured! Failing securely.")
+            raise HTTPException(status_code=500, detail="Server configuration error")
+
+        raw_body = await request.body()
+        signature_header = request.headers.get("x-hub-signature-256")
+
+        if not signature_header or not signature_header.startswith("sha256="):
+            logger.warning("Missing or malformed X-Hub-Signature-256 header")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
+        expected_sig = hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        received_sig = signature_header.split("sha256=")[1]
+
+        if not secrets.compare_digest(expected_sig, received_sig):
+            logger.warning("Signature mismatch. Potential spoofing attack.")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +177,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTP exceptions to ensure fail-secure error codes are returned
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
