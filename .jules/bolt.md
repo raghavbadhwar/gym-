@@ -1,0 +1,3 @@
+## 2024-05-24 - SQLAlchemy Enum Aggregations
+**Learning:** When refactoring SQLAlchemy models with Enum columns (like `Member.current_state`) to use `query(...).group_by(...)`, the query returns the actual Enum objects (e.g., `MemberState.ACTIVE`), not their underlying string values (`.value`).
+**Action:** When working with SQLAlchemy aggregations on Enum columns, Dictionaries and mapping logic must use the Enum objects directly to avoid key mismatches or business logic errors.
