@@ -1,0 +1,3 @@
+## 2024-05-24 - Optimizing multiple count queries using GROUP BY
+**Learning:** In SQLAlchemy, replacing multiple `.count()` queries filtered by an Enum column with a single `.group_by()` query returning `func.count(id)` can dramatically reduce database roundtrips and solve N+1 query problems. However, the query returns the actual Enum objects (e.g., `MemberState.ACTIVE`), not their underlying string values (`.value`).
+**Action:** Always map grouped Enum values directly using the Enum objects in dictionaries or logic (e.g., `counts[MemberState.ACTIVE]`) to avoid key mismatches or business logic errors, and ensure totals account for all records correctly.
