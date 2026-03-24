@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -62,6 +64,32 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        signature_header = request.headers.get("x-hub-signature-256")
+        if not signature_header:
+            logger.warning("Missing x-hub-signature-256 header")
+            raise HTTPException(status_code=401, detail="Missing signature")
+
+        if not settings.whatsapp_app_secret:
+            logger.error("Missing whatsapp_app_secret in settings")
+            raise HTTPException(status_code=500, detail="Missing app secret")
+
+        raw_body = await request.body()
+        expected_signature = hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not signature_header.startswith("sha256="):
+            logger.warning(f"Invalid signature format: {signature_header}")
+            raise HTTPException(status_code=401, detail="Invalid signature format")
+
+        actual_signature = signature_header[7:]
+
+        if not hmac.compare_digest(expected_signature, actual_signature):
+            logger.warning("Signature verification failed")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +178,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
