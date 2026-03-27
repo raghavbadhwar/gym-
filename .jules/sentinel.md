@@ -1,0 +1,4 @@
+## 2024-05-24 - Missing Webhook Signature Verification
+**Vulnerability:** The WhatsApp webhook endpoint (`/api/v1/webhooks/whatsapp` POST) lacks `X-Hub-Signature-256` signature verification. Any attacker can send arbitrary POST requests mimicking Meta's format to spoof messages, trigger workflows, or perform SSRF/DoS.
+**Learning:** WhatsApp webhooks must validate the payload signature to ensure they originate from Meta. This requires configuring `whatsapp_app_secret` and computing an HMAC-SHA256 hash using the raw request body. The application must 'Fail Secure' (e.g., return HTTP 401/500) if the signature is invalid or the secret is missing.
+**Prevention:** Always implement signature validation on public webhook endpoints before processing any payload data. Ensure secrets are required in configuration.
