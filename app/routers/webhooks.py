@@ -9,10 +9,13 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
+import secrets
 
 from app.config import settings
 from app.database import get_db
@@ -38,30 +41,58 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
-        logger.success("WhatsApp webhook verified successfully ✅")
-        return int(hub_challenge)
+    if hub_mode == "subscribe" and hub_verify_token and settings.whatsapp_verify_token:
+        # Use secrets.compare_digest to prevent timing attacks
+        if secrets.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
+            logger.success("WhatsApp webhook verified successfully ✅")
+            return int(hub_challenge)
     
-    logger.warning(f"Webhook verification failed! Token received: {hub_verify_token}")
+    logger.warning("Webhook verification failed! Invalid token or missing configuration.")
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
 
 
 @router.post("/whatsapp")
-async def receive_message(request: Request, db: Session = Depends(get_db)):
+async def receive_message(
+    request: Request,
+    db: Session = Depends(get_db),
+    x_hub_signature_256: Optional[str] = Header(None)
+):
     """
     WhatsApp webhook endpoint for receiving messages.
     
     Workflow:
-    1. Parse incoming message
-    2. Handle media (image/audio/video) with polite rejection
-    3. Check for escalation triggers
-    4. Classify intent
-    5. Route to appropriate handler
-    6. Send response
+    1. Verify webhook signature
+    2. Parse incoming message
+    3. Handle media (image/audio/video) with polite rejection
+    4. Check for escalation triggers
+    5. Classify intent
+    6. Route to appropriate handler
+    7. Send response
     
-    Always returns 200 to prevent Meta from retrying.
+    Always returns 200 to prevent Meta from retrying, EXCEPT on signature failure.
     """
     try:
+        # Verify Webhook Signature (X-Hub-Signature-256)
+        # Fail secure if the secret is not configured
+        if not settings.whatsapp_app_secret:
+            logger.error("whatsapp_app_secret is not configured!")
+            raise HTTPException(status_code=500, detail="Server configuration error")
+
+        if not x_hub_signature_256:
+            logger.warning("Missing X-Hub-Signature-256 header")
+            raise HTTPException(status_code=401, detail="Missing signature")
+
+        body = await request.body()
+        expected_signature = "sha256=" + hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"),
+            body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(x_hub_signature_256, expected_signature):
+            logger.warning("Invalid webhook signature")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,9 +181,12 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 401 or 500) so they aren't swallowed
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
-        # Return 200 anyway to prevent Meta from retrying
+        # Return 200 anyway to prevent Meta from retrying on generic errors
         return {"status": "error", "message": str(e)}
 
 
