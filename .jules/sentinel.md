@@ -1,0 +1,5 @@
+
+## 2026-03-31 - Missing Webhook Signature Verification in WhatsApp Integration
+**Vulnerability:** The WhatsApp webhook endpoint (`/api/v1/webhooks/whatsapp` POST) was missing `X-Hub-Signature-256` validation, allowing anyone to send forged messages, trigger AI usage, and interact with the database.
+**Learning:** The verification token (`hub.verify_token`) is only used for the initial GET verification from Meta. The POST requests delivering messages require HMAC-SHA256 signature verification using the Meta App Secret to confirm authenticity. A fail-secure architecture requires explicit checks (`raise HTTPException` before a catch-all) rather than swallowing errors as `200 OK`.
+**Prevention:** Always implement HMAC signature verification on webhook endpoints provided by external services (like Meta, Stripe, GitHub). Ensure the App Secret is properly configured and enforce a hard fail (HTTP 500) if the secret is missing from the environment. Use `secrets.compare_digest` for the initial verification token comparison to prevent timing attacks.
