@@ -1,0 +1,3 @@
+## 2024-05-18 - Missing ARIA Labels on Icon-only Elements
+**Learning:** Found an accessibility issue pattern specific to the dashboard components where icon-only buttons (like `.send-btn` and `.modal-close`) and several input fields (`#chatInput`, `#testPhone`, `#testMessage`) were missing `aria-label` attributes, making them unreadable to screen readers.
+**Action:** Always verify that every interactive element, especially inputs lacking a visible `<label>` and buttons containing only an `<svg>` or single symbol, includes an appropriate `aria-label` attribute to describe its function.
