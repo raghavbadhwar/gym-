@@ -1,0 +1,3 @@
+## 2024-05-24 - Group By Optimization on Enums
+**Learning:** When refactoring multiple SQLAlchemy `.count()` calls on Enum columns to a single `.group_by(enum_column)` query, the result typically contains the Enum object itself. However, depending on DB driver, it could be a raw string. Mapping counts requires safely handling both cases (e.g. `state if state in MemberState else MemberState(state)`). Additionally, `total` aggregate counts should be dynamically calculated with `sum()` of the returned categories instead of hardcoding specific state keys.
+**Action:** Always test `.group_by()` queries on Enum columns and add logic to safely convert DB driver strings to Enum objects if needed. Ensure aggregates use dynamic `sum()` to avoid brittle calculations.
