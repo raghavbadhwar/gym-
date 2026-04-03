@@ -283,20 +283,27 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
+        from sqlalchemy import func
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # Optimize with a single group_by query
+        state_counts = dict(self.db.query(Member.current_state, func.count(Member.id)).group_by(Member.current_state).all())
+
+        # Handle cases where Enum objects or string values are returned
+        normalized_counts = {
+            state.value if hasattr(state, 'value') else state: count
+            for state, count in state_counts.items()
+        }
+
+        active = normalized_counts.get(MemberState.ACTIVE.value, 0)
         
         return {
             "total": total,
             "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
+            "at_risk": normalized_counts.get(MemberState.AT_RISK.value, 0),
+            "dormant": normalized_counts.get(MemberState.DORMANT.value, 0),
+            "churned": normalized_counts.get(MemberState.CHURNED.value, 0),
+            "new": normalized_counts.get(MemberState.NEW.value, 0),
             "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
         }
     
