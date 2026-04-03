@@ -20,6 +20,7 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.ai_engine import ai_engine, Intent
 from app.services.member_service import MemberService
 from app.flows.handlers import MessageHandler
+from app.models.message import Message
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["Webhooks"])
 
@@ -53,11 +54,12 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Workflow:
     1. Parse incoming message
-    2. Handle media (image/audio/video) with polite rejection
-    3. Check for escalation triggers
-    4. Classify intent
-    5. Route to appropriate handler
-    6. Send response
+    2. Check for duplicate messages (idempotency)
+    3. Handle media (image/audio/video) with polite rejection
+    4. Check for escalation triggers
+    5. Classify intent
+    6. Route to appropriate handler
+    7. Send response
     
     Always returns 200 to prevent Meta from retrying.
     """
@@ -76,8 +78,20 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         phone = message["from"]
         content = message.get("content", "")
         msg_type = message.get("type", "text")
+        message_id = message.get("message_id")
         
         logger.info(f"📩 Message from {phone}: [{msg_type}] {content[:50]}...")
+        
+        # ===== IDEMPOTENCY CHECK =====
+        # Check if we've already processed this message to prevent duplicates
+        if message_id:
+            existing = db.query(Message).filter(
+                Message.wa_message_id == message_id
+            ).first()
+            
+            if existing:
+                logger.warning(f"Duplicate message detected (ID: {message_id}), skipping")
+                return {"status": "ok", "handled": "duplicate"}
         
         # ===== MEDIA HANDLER =====
         # If webhook contains type=image or type=audio, reply with media message
@@ -146,12 +160,30 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         # ===== SEND RESPONSE =====
         if response:
-            await _send_response(phone, response)
+            try:
+                await _send_response(phone, response)
+            except Exception as e:
+                logger.error(f"Failed to send response to {phone}: {e}")
+                # Try to send a user-friendly error message
+                try:
+                    error_msg = "Sorry, I'm having trouble responding right now. Please try again in a moment. 🙏"
+                    await whatsapp_service.send_text(phone, error_msg)
+                except Exception as e2:
+                    logger.error(f"Failed to send error message: {e2}")
         
         return {"status": "ok"}
         
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
+        
+        # Try to notify the user about the error
+        try:
+            if 'phone' in locals():
+                error_msg = "Sorry, something went wrong. Our team has been notified. Please try again later. 🙏"
+                await whatsapp_service.send_text(phone, error_msg)
+        except Exception:
+            pass  # Best effort notification
+        
         # Return 200 anyway to prevent Meta from retrying
         return {"status": "error", "message": str(e)}
 

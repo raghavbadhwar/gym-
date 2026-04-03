@@ -56,7 +56,9 @@ def get_db_context() -> Generator[Session, None, None]:
     try:
         yield db
         db.commit()
-    except Exception:
+    except Exception as e:
+        from loguru import logger
+        logger.error(f"Database transaction failed: {e}")
         db.rollback()
         raise
     finally:
