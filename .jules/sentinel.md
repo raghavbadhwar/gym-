@@ -1,0 +1,4 @@
+## 2024-04-03 - Missing WhatsApp Webhook Signature Verification
+**Vulnerability:** The WhatsApp webhook endpoint (`/api/v1/webhooks/whatsapp`) was processing incoming requests without verifying the `X-Hub-Signature-256` header. This allowed any unauthenticated actor to forge requests and impersonate Meta/WhatsApp.
+**Learning:** Webhook endpoints that accept data from external services must inherently validate the cryptographic signature sent by the provider. The fail-secure approach requires failing completely (HTTP 500) if the necessary secret key is not configured, rather than defaulting to an open state.
+**Prevention:** Always use `hmac.compare_digest` to perform constant-time comparisons of cryptographic signatures instead of string equality (`==`) to prevent timing attacks. Ensure the validation logic is tested for edge cases (missing signature, invalid signature, missing secret).

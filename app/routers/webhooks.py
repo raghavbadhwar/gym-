@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -62,6 +64,28 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # ===== SECURITY: VERIFY SIGNATURE =====
+        if not settings.whatsapp_app_secret:
+            logger.error("🚨 CRITICAL: whatsapp_app_secret is not configured! Failing securely.")
+            raise HTTPException(status_code=500, detail="Internal Server Error: Webhook secret missing")
+
+        raw_body = await request.body()
+        signature = request.headers.get("X-Hub-Signature-256")
+
+        if not signature:
+            logger.warning("🚨 SECURITY: Missing X-Hub-Signature-256 header")
+            raise HTTPException(status_code=401, detail="Missing signature")
+
+        expected_signature = "sha256=" + hmac.new(
+            settings.whatsapp_app_secret.encode("utf-8"),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            logger.warning("🚨 SECURITY: Invalid webhook signature detected")
+            raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +174,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTPExceptions (like our security errors) so FastAPI handles them
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
