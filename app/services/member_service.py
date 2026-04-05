@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,12 +283,26 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
+        # Query total count directly to account for any members without a valid state (NULL or unmapped)
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # Optimize multiple count queries into a single group_by
+        state_counts = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # safely handle SQLAlchemy returning Enum objects
+        stats_dict = {
+            (state.value if hasattr(state, 'value') else state): count
+            for state, count in state_counts if state is not None
+        }
+
+        active = stats_dict.get(MemberState.ACTIVE.value, 0)
+        at_risk = stats_dict.get(MemberState.AT_RISK.value, 0)
+        dormant = stats_dict.get(MemberState.DORMANT.value, 0)
+        churned = stats_dict.get(MemberState.CHURNED.value, 0)
+        new = stats_dict.get(MemberState.NEW.value, 0)
         
         return {
             "total": total,
