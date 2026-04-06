@@ -1,0 +1,4 @@
+## 2024-04-06 - Swallowed HTTPExceptions in FastAPI Webhooks
+**Vulnerability:** The FastAPI webhook endpoint was configured to swallow all `Exception` objects and return a generic 200 OK `{"status": "error"}` to avoid retries from Meta. This unintentionally caught `HTTPException`s thrown for critical security failures (like unauthorized access or invalid signatures), returning a 200 OK instead of the intended fail-secure 401 error.
+**Learning:** Broad `except Exception:` blocks in webhook or background task handlers that are designed to acknowledge receipt and prevent retries can easily mask security exceptions, breaking the application's fail-secure design.
+**Prevention:** Always explicitly catch and re-raise `HTTPException` (or similar security-specific exceptions) prior to general `Exception` handlers, ensuring intentional fail-secure error codes are returned to the client.
