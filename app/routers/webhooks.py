@@ -9,6 +9,8 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
+import hmac
+import hashlib
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
@@ -62,6 +64,23 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # Authenticate webhook request using HMAC-SHA256
+        raw_body = await request.body()
+        signature = request.headers.get("x-hub-signature-256")
+
+        if settings.whatsapp_app_secret:
+            expected_sig = "sha256=" + hmac.new(
+                settings.whatsapp_app_secret.encode("utf-8"),
+                raw_body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not signature or not hmac.compare_digest(signature, expected_sig):
+                logger.warning("Webhook authentication failed: Invalid signature")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+        else:
+            logger.warning("whatsapp_app_secret not configured. Bypassing signature validation.")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +169,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTP exceptions (e.g. 401 Unauthorized) to client
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
