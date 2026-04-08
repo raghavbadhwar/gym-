@@ -9,7 +9,9 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+import hmac
+import hashlib
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
@@ -47,7 +49,11 @@ async def verify_webhook(
 
 
 @router.post("/whatsapp")
-async def receive_message(request: Request, db: Session = Depends(get_db)):
+async def receive_message(
+    request: Request,
+    db: Session = Depends(get_db),
+    x_hub_signature_256: Optional[str] = Header(None, alias="X-Hub-Signature-256")
+):
     """
     WhatsApp webhook endpoint for receiving messages.
     
@@ -62,6 +68,26 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        body = await request.body()
+
+        # Verify WhatsApp webhook signature
+        if settings.whatsapp_app_secret:
+            if not x_hub_signature_256:
+                logger.warning("Missing X-Hub-Signature-256 header")
+                raise HTTPException(status_code=401, detail="Missing signature")
+
+            expected_signature = "sha256=" + hmac.new(
+                settings.whatsapp_app_secret.encode(),
+                body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not (x_hub_signature_256 and expected_signature and hmac.compare_digest(x_hub_signature_256, expected_signature)):
+                logger.warning("Invalid X-Hub-Signature-256 header")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+        else:
+            logger.warning("whatsapp_app_secret not configured, bypassing signature validation")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +176,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTP exceptions to return proper status codes
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
