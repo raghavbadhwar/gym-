@@ -1,0 +1,3 @@
+## 2024-05-14 - Replace Multiple DB Counts with Single GroupBy
+**Learning:** In SQLAlchemy, aggregate queries using `.count()` can suffer from an N+1 equivalent when fetching counts for multiple distinct states. `MemberService.get_stats` was making 6 separate queries for counts. However, consolidating into a single `func.count().group_by()` query is risky if the column allows `NULL` values, as the group by will omit those from the total count depending on DB behavior.
+**Action:** When optimizing multiple count queries using `group_by`, keep a separate `.count()` query for the overall total if `NULL` values are possible, ensuring accuracy while still drastically reducing the number of database roundtrips.
