@@ -9,10 +9,13 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
+import json
 
 from app.config import settings
 from app.database import get_db
@@ -47,7 +50,11 @@ async def verify_webhook(
 
 
 @router.post("/whatsapp")
-async def receive_message(request: Request, db: Session = Depends(get_db)):
+async def receive_message(
+    request: Request,
+    x_hub_signature_256: str = Header(None),
+    db: Session = Depends(get_db)
+):
     """
     WhatsApp webhook endpoint for receiving messages.
     
@@ -62,7 +69,25 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
-        data = await request.json()
+        body = await request.body()
+
+        # Verify Webhook Signature if secret is configured
+        if settings.whatsapp_app_secret:
+            if not x_hub_signature_256:
+                logger.error("Missing X-Hub-Signature-256 header")
+                raise HTTPException(status_code=401, detail="Missing signature")
+
+            expected_signature = "sha256=" + hmac.new(
+                settings.whatsapp_app_secret.encode("utf-8"),
+                body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not hmac.compare_digest(expected_signature, x_hub_signature_256):
+                logger.error("Invalid Webhook Signature")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
+        data = json.loads(body)
         logger.debug(f"Webhook payload received: {data}")
         
         # Parse the incoming message
@@ -150,6 +175,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTPExceptions to avoid swallowing 401 Unauthorized errors
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
