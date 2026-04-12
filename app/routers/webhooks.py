@@ -9,7 +9,9 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, Query
+import hmac
+import hashlib
+from fastapi import APIRouter, Request, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
@@ -47,7 +49,11 @@ async def verify_webhook(
 
 
 @router.post("/whatsapp")
-async def receive_message(request: Request, db: Session = Depends(get_db)):
+async def receive_message(
+    request: Request,
+    x_hub_signature_256: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
     """
     WhatsApp webhook endpoint for receiving messages.
     
@@ -62,6 +68,19 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # Validate webhook signature if secret is configured
+        if settings.whatsapp_app_secret:
+            body = await request.body()
+            expected_sig = "sha256=" + hmac.new(
+                settings.whatsapp_app_secret.encode("utf-8"),
+                body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not x_hub_signature_256 or not hmac.compare_digest(x_hub_signature_256, expected_sig):
+                logger.warning("Invalid webhook signature")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +169,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Re-raise HTTPException (e.g., 401 Unauthorized) so FastAPI can handle it
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
