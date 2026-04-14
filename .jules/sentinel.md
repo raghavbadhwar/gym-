@@ -1,0 +1,4 @@
+## 2026-04-14 - Fix missing webhook signature validation and fail-open exception handling
+**Vulnerability:** The WhatsApp webhook endpoint (`/api/v1/webhooks/whatsapp`) was missing validation of the `X-Hub-Signature-256` header from Meta, allowing unauthenticated requests to send forged messages into the system. Additionally, the broad `except Exception:` block swallowed explicit `HTTPException`s, returning a `200 OK` status instead of the intended `401 Unauthorized` for validation failures.
+**Learning:** Broad exception handling in webhook receivers (designed to return 200s to avoid Meta retries) can cause security mitigations to "fail open" if specific exceptions like `HTTPException` are caught and logged but not correctly propagated.
+**Prevention:** Always place security-related exception handling (like explicitly re-raising `HTTPException`) BEFORE general catch-all exception blocks to ensure critical validation failures execute as intended.
