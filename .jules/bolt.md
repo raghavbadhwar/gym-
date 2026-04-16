@@ -1,0 +1,3 @@
+## 2024-05-15 - Optimize get_stats counts
+**Learning:** When optimizing SQLAlchemy aggregate queries by replacing multiple `.count()` calls with a single `.group_by()`, retain a separate `total = self.db.query(Member).count()` query rather than summing dictionary keys, to ensure that total aggregate calculations account for all records correctly, avoiding skipping rows where the grouped column may contain `NULL` values or unmapped states.
+**Action:** When refactoring multiple `.count()` queries into a `.group_by()`, keep the total `.count()` separate if the column being grouped by might be nullable or contain unexpected values. Use a robust fallback pattern `state.name.lower() if hasattr(state, 'name') else str(state).lower()` when mapping Enum columns.
