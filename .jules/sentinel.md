@@ -1,0 +1,4 @@
+## 2024-05-18 - Prevent FastAPI Broad Exception Handlers from Swallowing HTTPExceptions
+**Vulnerability:** Broad exception handler swallowed HTTPException
+**Learning:** FastAPI webhook had a fail-open flaw where specific security exceptions (like 401 Unauthorized for invalid signatures) were caught by a generic `except Exception` block. This resulted in the API returning a 200 OK success response instead of denying access.
+**Prevention:** Always explicitly catch and re-raise HTTPException before Exception block in webhooks to ensure proper error codes are bubbled up and fail-open flaws are prevented.
