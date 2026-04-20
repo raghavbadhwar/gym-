@@ -1,0 +1,4 @@
+## 2025-04-20 - Webhook Security Enhancements
+**Vulnerability:** Missing HMAC signature verification on webhook payload, and broad exception handler masking HTTPException security rejections (fail-open vulnerability).
+**Learning:** In FastAPI, when verifying webhook signatures that require the raw payload, you must extract raw bytes via `await request.body()` *before* parsing JSON. Also, a broad `except Exception:` block in FastAPI can swallow `HTTPException` responses, converting 401 Unauthorized errors into generic 200 OK responses for the client (which could trick external services or bypass security logic).
+**Prevention:** Always verify incoming request signatures using constant-time comparisons (`hmac.compare_digest`). Explicitly catch and re-raise `HTTPException` before any broad catch-all exception blocks to ensure intentional security rejections are returned to the client.
