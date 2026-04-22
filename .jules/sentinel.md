@@ -1,0 +1,4 @@
+## 2024-04-22 - FastAPI Webhook Exception Swallowing
+**Vulnerability:** A generic `except Exception as e:` block in the webhook endpoint was swallowing `HTTPException`s raised during webhook signature verification.
+**Learning:** This caused the endpoint to return a 200 OK status even when signature verification failed (which raises a 401 Unauthorized or 403 Forbidden `HTTPException`), preventing Meta from retrying and effectively bypassing authentication error handling.
+**Prevention:** Always catch and explicitly re-raise `HTTPException` before any broad exception handlers (`except Exception`) in FastAPI endpoints.
