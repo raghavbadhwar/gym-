@@ -1,0 +1,4 @@
+## 2024-04-23 - Prevent Swallowed Exceptions in FastAPI Webhooks
+**Vulnerability:** The application was catching all exceptions (`except Exception:`) in the WhatsApp webhook endpoint and returning a 200 OK status to prevent Meta from retrying. This "fail-open" pattern inadvertently swallowed critical security exceptions (like `HTTPException` for 401 Unauthorized), causing the endpoint to return 200 OK even when signature verification failed.
+**Learning:** Broad exception handling in FastAPI can mask security-critical HTTP errors, leading to authentication bypass or fail-open conditions where unauthorized requests appear to succeed or are not properly rejected by the framework.
+**Prevention:** Always explicitly catch and re-raise `HTTPException` (or other critical security exceptions) before a general `except Exception` block in FastAPI endpoints, especially when implementing "fail-open" retry prevention logic for webhooks.
