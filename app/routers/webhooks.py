@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -38,7 +40,7 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    if hub_mode == "subscribe" and hmac.compare_digest(hub_verify_token or "", settings.whatsapp_verify_token):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
@@ -62,7 +64,28 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
-        data = await request.json()
+        raw_body = await request.body()
+
+        # Verify WhatsApp Webhook Signature
+        if settings.whatsapp_app_secret:
+            signature = request.headers.get("X-Hub-Signature-256", "")
+            if not signature.startswith("sha256="):
+                logger.warning("Missing or invalid X-Hub-Signature-256 header format")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
+            expected_signature = hmac.new(
+                settings.whatsapp_app_secret.encode("utf-8"),
+                raw_body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not hmac.compare_digest(signature[7:], expected_signature):
+                logger.warning("Signature verification failed")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
+        # Now parse the JSON after verifying raw body
+        import json
+        data = json.loads(raw_body.decode('utf-8'))
         logger.debug(f"Webhook payload received: {data}")
         
         # Parse the incoming message
@@ -150,6 +173,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
