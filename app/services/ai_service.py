@@ -20,6 +20,20 @@ class AIService:
     - Natural conversation handling
     """
     
+    # Pre-allocate dictionary to avoid redundant object creation during high-frequency method calls
+    _FALLBACK_INTENTS = {
+        "greet": ["hi", "hello", "hey", "good morning", "good evening", "namaste"],
+        "book_class": ["book", "class", "schedule class", "join class", "slot"],
+        "cancel_booking": ["cancel", "unbook", "remove booking"],
+        "check_schedule": ["schedule", "classes today", "what classes", "timing"],
+        "get_workout": ["workout", "exercise", "today's workout", "routine"],
+        "get_diet": ["diet", "meal", "food", "nutrition", "eat", "calories"],
+        "log_workout": ["done", "completed", "finished workout"],
+        "check_progress": ["progress", "weight", "stats", "how am i doing"],
+        "check_streak": ["streak", "how many days"],
+        "help": ["help", "?", "confused", "don't understand"]
+    }
+
     def __init__(self):
         if settings.gemini_api_key:
             genai.configure(api_key=settings.gemini_api_key)
@@ -364,20 +378,7 @@ Return ONLY valid JSON:
         """Fallback intent classification without AI."""
         message = message.lower().strip()
         
-        intents = {
-            "greet": ["hi", "hello", "hey", "good morning", "good evening", "namaste"],
-            "book_class": ["book", "class", "schedule class", "join class", "slot"],
-            "cancel_booking": ["cancel", "unbook", "remove booking"],
-            "check_schedule": ["schedule", "classes today", "what classes", "timing"],
-            "get_workout": ["workout", "exercise", "today's workout", "routine"],
-            "get_diet": ["diet", "meal", "food", "nutrition", "eat", "calories"],
-            "log_workout": ["done", "completed", "finished workout"],
-            "check_progress": ["progress", "weight", "stats", "how am i doing"],
-            "check_streak": ["streak", "how many days"],
-            "help": ["help", "?", "confused", "don't understand"]
-        }
-        
-        for intent, keywords in intents.items():
+        for intent, keywords in self._FALLBACK_INTENTS.items():
             for keyword in keywords:
                 if keyword in message:
                     return {"intent": intent, "confidence": 0.7, "entities": {}}
