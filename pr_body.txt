@@ -1,0 +1,20 @@
+🚨 **Severity:** CRITICAL
+
+💡 **Vulnerability:**
+The POST `/whatsapp` webhook endpoint was susceptible to two major security issues:
+1. **Missing Authentication:** It did not verify the `X-Hub-Signature-256` HMAC signature sent by Meta, allowing malicious actors to spoof WhatsApp messages to the backend.
+2. **Fail-Open Exception Handling:** The webhook contained a broad `except Exception` block that caught all errors and returned a 200 OK. If a security exception (like `HTTPException` for a 401 Unauthorized) was thrown, it would be swallowed, effectively resulting in a fail-open state.
+3. **Timing Attacks:** The GET `/whatsapp` webhook verification endpoint used standard string equality (`==`) to check the verify token, which could be vulnerable to timing attacks.
+
+🎯 **Impact:**
+An attacker could bypass authentication and inject arbitrary messages into the system by sending forged webhook payloads, potentially manipulating data or spamming the bot. The fail-open nature of the exception block meant even if validation was attempted, throwing an error wouldn't stop the webhook from returning a success response.
+
+🔧 **Fix:**
+- Added `whatsapp_app_secret` to `app/config.py` settings.
+- Implemented `hmac.compare_digest` in the GET endpoint to securely compare the verify token.
+- Updated the POST endpoint to extract the raw byte body and validate the `X-Hub-Signature-256` header against the HMAC SHA-256 hash using `whatsapp_app_secret`. (Gracefully bypasses if the secret is unconfigured).
+- Added an explicit `except HTTPException: raise` block *before* the broad exception handler to prevent the fail-open scenario.
+
+✅ **Verification:**
+1. Ran `pytest app/tests/` to ensure no tests were broken.
+2. Can be verified by configuring `whatsapp_app_secret` and sending a request with an invalid signature header. It will correctly return a 401 Unauthorized instead of a 200 OK.
