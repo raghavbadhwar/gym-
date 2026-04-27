@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -38,7 +40,7 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    if hub_mode == "subscribe" and hmac.compare_digest(hub_verify_token or "", settings.whatsapp_verify_token or ""):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
@@ -61,6 +63,25 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # Verify signature if configured
+    if settings.whatsapp_app_secret:
+        signature_header = request.headers.get("x-hub-signature-256")
+        if not signature_header:
+            raise HTTPException(status_code=403, detail="Missing signature")
+
+        expected_signature = signature_header.replace("sha256=", "")
+        raw_body = await request.body()
+
+        calculated_signature = hmac.new(
+            settings.whatsapp_app_secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, calculated_signature):
+            logger.warning("Webhook signature verification failed")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
@@ -150,6 +171,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
