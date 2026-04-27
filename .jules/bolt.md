@@ -1,0 +1,3 @@
+## 2025-01-14 - SQLAlchemy Group By on Enums
+**Learning:** When refactoring multiple individual SQLAlchemy `.count()` queries into a single `.group_by()` query on an Enum column, SQLAlchemy natively maps the raw state object to the Enum instance in the result set. This allows us to reduce 6 individual database hit queries into 1 grouped query safely.
+**Action:** Map the raw state object directly as the dictionary key (e.g., `{state: count}`) and look up values using the Enum instance itself (e.g., `counts_dict.get(MemberState.ACTIVE, 0)`). Avoid manually parsing `.name` or `.value` which can cause fragile key matching.
