@@ -9,6 +9,8 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
+import hmac
+import hashlib
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
@@ -38,7 +40,8 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    if hub_mode == "subscribe" and hub_verify_token and settings.whatsapp_verify_token and \
+       hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
@@ -62,6 +65,23 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     Always returns 200 to prevent Meta from retrying.
     """
     try:
+        # ===== SIGNATURE VERIFICATION =====
+        if settings.whatsapp_app_secret:
+            signature = request.headers.get("x-hub-signature-256", "")
+            if signature.startswith("sha256="):
+                signature = signature[7:]
+
+            raw_body = await request.body()
+            expected_hash = hmac.new(
+                settings.whatsapp_app_secret.encode(),
+                raw_body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not hmac.compare_digest(signature, expected_hash):
+                logger.warning("Invalid webhook signature")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
         
@@ -150,6 +170,8 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
