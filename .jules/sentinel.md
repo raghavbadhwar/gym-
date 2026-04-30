@@ -1,0 +1,4 @@
+## 2024-04-30 - Fix Webhook Timing Attack and Exception Masking
+**Vulnerability:** Webhook verification was vulnerable to timing attacks using `==` for token comparison, and webhook processing explicitly masked HTTP errors by catching all exceptions and returning 200 OK.
+**Learning:** String comparison with `==` leaks timing information that attackers could use to guess tokens. Broad exception handling without re-raising `HTTPException` causes fail-open vulnerabilities where security-critical errors (e.g., 401 Unauthorized, 403 Forbidden) are masked and treated as successful operations.
+**Prevention:** Always use `hmac.compare_digest` with explicit `None` checks for security tokens, and explicitly catch and `raise` `HTTPException` before broad `except Exception:` blocks in FastAPI routers to ensure HTTP errors propagate correctly.
