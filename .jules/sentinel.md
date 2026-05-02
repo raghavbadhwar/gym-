@@ -1,0 +1,7 @@
+## 2025-05-02 - Webhook Verification and Exception Handling
+
+**Vulnerability:** Timing attack vulnerability in webhook token verification and fail-open vulnerability in message handling. The `verify_webhook` endpoint used a standard `==` string equality check on the `hub_verify_token`, making it vulnerable to timing attacks. The `receive_message` endpoint had a broad `except Exception` block at the root that caught all exceptions and returned a `200 OK` JSON with `"status": "error"`, masking explicit `HTTPException`s from FastAPI (like auth errors or rate limits).
+
+**Learning:** Webhook parameter comparisons must use constant-time operations like `hmac.compare_digest` while being careful to check for `NoneType` since parameters are often missing. Broad exception handlers in webhooks must explicitly exclude routing/HTTP exceptions, otherwise structural fail-open scenarios occur where clients incorrectly receive `200 OK` on explicitly rejected requests.
+
+**Prevention:** Use `hmac.compare_digest` with explicit `None` checks for any security-related token verification. When using a root `except Exception` block to catch and swallow general processing errors (to avoid Meta webhook retries), ensure `HTTPException` is explicitly caught and re-raised beforehand.
