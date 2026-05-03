@@ -1,0 +1,4 @@
+## 2025-02-23 - Prevent Timing Attacks in Webhook Verification
+**Vulnerability:** Timing attack vulnerability in webhook token verification due to standard string equality comparison.
+**Learning:** Using standard equality operators (like `==`) to compare tokens or secrets leaves the application vulnerable to timing attacks, as standard comparison exits early upon finding a mismatch, allowing an attacker to deduce the token by measuring response times. This was found in the FastAPI Meta/WhatsApp webhook verification endpoint.
+**Prevention:** Always use constant-time string comparison functions, such as `hmac.compare_digest`, when verifying tokens, secrets, or challenges via GET parameters. Also ensure explicit `None` checks are included before comparison to avoid `TypeError` exceptions if query parameters are missing.
