@@ -1,0 +1,4 @@
+## 2025-05-04 - Timing Attack Vulnerability in Webhook Verification
+**Vulnerability:** The WhatsApp webhook verification endpoint used standard equality (`==`) to compare the incoming `hub.verify_token` against the expected `settings.whatsapp_verify_token`.
+**Learning:** Standard string equality checks evaluate character by character and return early upon the first mismatch. This creates a timing side-channel where an attacker can observe the time taken for the comparison to fail, allowing them to incrementally guess the correct secret token character by character.
+**Prevention:** Always use constant-time string comparison functions like `hmac.compare_digest` for verifying security tokens, secrets, or signatures. Additionally, ensure `None` checks are in place before comparison since `hmac.compare_digest` can raise `TypeError` if query parameters default to `None`.

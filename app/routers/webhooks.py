@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
 
 from app.config import settings
 from app.database import get_db
@@ -38,9 +39,10 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
-        logger.success("WhatsApp webhook verified successfully ✅")
-        return int(hub_challenge)
+    if hub_mode == "subscribe" and hub_verify_token is not None and settings.whatsapp_verify_token is not None:
+        if hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
+            logger.success("WhatsApp webhook verified successfully ✅")
+            return int(hub_challenge)
     
     logger.warning(f"Webhook verification failed! Token received: {hub_verify_token}")
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
