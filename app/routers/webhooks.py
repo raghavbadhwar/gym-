@@ -9,6 +9,7 @@ This module handles:
 
 Uses Loguru for detailed logging as specified.
 """
+import hmac
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
@@ -38,7 +39,11 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    # Use hmac.compare_digest for constant-time comparison to prevent timing attacks
+    if (hub_mode == "subscribe" and
+        hub_verify_token is not None and
+        settings.whatsapp_verify_token is not None and
+        hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token)):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
