@@ -13,6 +13,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
 from typing import Optional
+import hmac
 
 from app.config import settings
 from app.database import get_db
@@ -38,7 +39,11 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
+    # Security: Use hmac.compare_digest and None checks to prevent timing attacks
+    if (hub_mode == "subscribe" and
+        hub_verify_token is not None and
+        settings.whatsapp_verify_token is not None and
+        hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token)):
         logger.success("WhatsApp webhook verified successfully ✅")
         return int(hub_challenge)
     
@@ -150,6 +155,9 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException:
+        # Security: Re-raise HTTPException to prevent masking HTTP errors as 200 OK
+        raise
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
         # Return 200 anyway to prevent Meta from retrying
