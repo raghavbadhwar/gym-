@@ -12,6 +12,7 @@ Uses Loguru for detailed logging as specified.
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from loguru import logger
+import hmac
 from typing import Optional
 
 from app.config import settings
@@ -38,9 +39,12 @@ async def verify_webhook(
     """
     logger.info(f"Webhook verification request - mode: {hub_mode}")
     
-    if hub_mode == "subscribe" and hub_verify_token == settings.whatsapp_verify_token:
-        logger.success("WhatsApp webhook verified successfully ✅")
-        return int(hub_challenge)
+    # Security: Use hmac.compare_digest to prevent timing attacks.
+    # Also check for None types to avoid TypeError during comparison.
+    if hub_mode == "subscribe" and hub_verify_token is not None and settings.whatsapp_verify_token is not None:
+        if hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
+            logger.success("WhatsApp webhook verified successfully ✅")
+            return int(hub_challenge)
     
     logger.warning(f"Webhook verification failed! Token received: {hub_verify_token}")
     raise HTTPException(status_code=403, detail="Verification failed - Invalid token")
@@ -150,10 +154,15 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         return {"status": "ok"}
         
+    except HTTPException as e:
+        # Security: Explicitly re-raise HTTPException instances to prevent
+        # fail-open vulnerabilities where HTTP errors are masked as 200 OK responses.
+        raise e
     except Exception as e:
         logger.exception(f"❌ Error processing webhook: {e}")
+        # Security: Do not leak exception details in the response payload.
         # Return 200 anyway to prevent Meta from retrying
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Internal Server Error"}
 
 
 async def _send_response(phone: str, response):
