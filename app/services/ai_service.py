@@ -3,6 +3,7 @@ AI Service - Gemini-powered plan generation and NLU
 """
 import json
 import logging
+import re
 from typing import Optional, Dict, Any, List
 import google.generativeai as genai
 
@@ -377,10 +378,16 @@ Return ONLY valid JSON:
             "help": ["help", "?", "confused", "don't understand"]
         }
         
+        # Security: Use word boundaries to prevent intent confusion where
+        # smaller keywords improperly match within larger unrelated inputs (e.g., 'book' in 'cancel my booking').
         for intent, keywords in intents.items():
             for keyword in keywords:
-                if keyword in message:
-                    return {"intent": intent, "confidence": 0.7, "entities": {}}
+                if re.search(r'\w', keyword):
+                    if re.search(rf"\b{re.escape(keyword)}\b", message):
+                        return {"intent": intent, "confidence": 0.7, "entities": {}}
+                else:
+                    if keyword in message:
+                        return {"intent": intent, "confidence": 0.7, "entities": {}}
         
         return {"intent": "other", "confidence": 0.5, "entities": {}}
     
