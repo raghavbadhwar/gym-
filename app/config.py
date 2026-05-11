@@ -20,7 +20,8 @@ class Settings(BaseSettings):
     whatsapp_phone_number_id: str = ""
     whatsapp_business_account_id: str = ""
     whatsapp_access_token: str = ""
-    whatsapp_verify_token: str = "gymbuddy_verify_token_2026"
+    # SECURITY: Do not hardcode secrets, load from env instead
+    whatsapp_verify_token: str = ""
     whatsapp_api_url: str = "https://graph.facebook.com/v18.0"
     
     # AI Configuration - Choose your provider
