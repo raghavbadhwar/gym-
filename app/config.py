@@ -4,8 +4,10 @@ Loads all settings from environment variables
 Production-ready, autonomous WhatsApp Agent backend for Gyms.
 """
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from functools import lru_cache
 from typing import Optional, Literal
+import secrets
 
 
 class Settings(BaseSettings):
@@ -36,7 +38,8 @@ class Settings(BaseSettings):
     
     # App Settings
     app_env: str = "development"
-    app_secret_key: str = "change-this-secret-key-in-production"
+    # Security: Use randomly generated default to prevent hardcoded secrets in production if not provided in environment
+    app_secret_key: str = Field(default_factory=lambda: secrets.token_hex(32))
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
