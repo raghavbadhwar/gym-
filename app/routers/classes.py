@@ -11,6 +11,7 @@ from uuid import UUID
 from app.database import get_db
 from app.services.member_service import MemberService
 from app.services.booking_service import BookingService
+from app.auth import get_admin_api_key
 
 router = APIRouter(prefix="/api/v1/classes", tags=["Classes"])
 
@@ -41,7 +42,7 @@ class BookingCancel(BaseModel):
 # ========== Endpoints ==========
 
 @router.post("/", status_code=201)
-def create_class(class_data: ClassCreate, db: Session = Depends(get_db)):
+def create_class(class_data: ClassCreate, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Create a new gym class."""
     service = BookingService(db)
     
@@ -126,7 +127,7 @@ def get_class(class_id: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/{class_id}")
-def cancel_class(class_id: str, reason: Optional[str] = None, db: Session = Depends(get_db)):
+def cancel_class(class_id: str, reason: Optional[str] = None, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Cancel a class."""
     service = BookingService(db)
     
@@ -140,7 +141,7 @@ def cancel_class(class_id: str, reason: Optional[str] = None, db: Session = Depe
 # ========== Bookings ==========
 
 @router.post("/book")
-def book_class(booking: BookingCreate, db: Session = Depends(get_db)):
+def book_class(booking: BookingCreate, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Book a class for a member."""
     member_service = MemberService(db)
     booking_service = BookingService(db)
@@ -161,7 +162,7 @@ def book_class(booking: BookingCreate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{class_id}/cancel")
-def cancel_booking(class_id: str, data: BookingCancel, db: Session = Depends(get_db)):
+def cancel_booking(class_id: str, data: BookingCancel, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Cancel a member's booking."""
     member_service = MemberService(db)
     booking_service = BookingService(db)
@@ -179,7 +180,7 @@ def cancel_booking(class_id: str, data: BookingCancel, db: Session = Depends(get
 
 
 @router.get("/member/{phone}/bookings")
-def get_member_bookings(phone: str, db: Session = Depends(get_db)):
+def get_member_bookings(phone: str, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Get all bookings for a member."""
     member_service = MemberService(db)
     booking_service = BookingService(db)
@@ -203,7 +204,8 @@ def mark_attendance(
     class_id: str,
     booking_id: str,
     attended: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    api_key: str = Depends(get_admin_api_key)
 ):
     """Mark booking as attended or no-show."""
     service = BookingService(db)
@@ -219,7 +221,7 @@ def mark_attendance(
 
 
 @router.get("/stats/utilization")
-def get_utilization_stats(days: int = 7, db: Session = Depends(get_db)):
+def get_utilization_stats(days: int = 7, db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
     """Get class utilization statistics."""
     service = BookingService(db)
     return service.get_utilization_stats(days=days)
