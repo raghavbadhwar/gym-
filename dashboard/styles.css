@@ -1028,3 +1028,19 @@ body {
     0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
     40% { transform: scale(1); opacity: 1; }
 }
+
+/* Added by Palette for accessibility */
+button.command-card {
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    appearance: none;
+    margin: 0;
+}
+
+.command-card:focus-visible {
+    outline: none;
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+}
