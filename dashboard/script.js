@@ -341,3 +341,13 @@ document.addEventListener('keydown', function (e) {
         closeSimulator();
     }
 });
+
+// ===== Keyboard navigation for Command Cards =====
+document.querySelectorAll('.command-card').forEach(card => {
+    card.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.click();
+        }
+    });
+});
