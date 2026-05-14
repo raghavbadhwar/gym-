@@ -615,7 +615,7 @@ If you cannot parse the details, return:
             )
             text = response.choices[0].message.content.strip()
         elif self._gemini_model:
-            response = self._gemini_model.generate_content(prompt)
+            response = await self._gemini_model.generate_content_async(prompt)
             text = response.text.strip()
         else:
             raise ValueError("No AI provider configured")
@@ -650,7 +650,7 @@ If you cannot parse the details, return:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    response = self._gemini_model.generate_content(prompt)
+                    response = await self._gemini_model.generate_content_async(prompt)
                     return response.text.strip()
                 except Exception as e:
                     error_str = str(e).lower()
