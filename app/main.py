@@ -110,7 +110,8 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    # Security: Overly permissive CORS ("*") is restricted in production to prevent unauthorized cross-origin requests.
+    allow_origins=["*"] if settings.app_env == "development" else [origin.strip() for origin in settings.cors_origins.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
