@@ -9,12 +9,13 @@ from datetime import date
 from uuid import UUID
 
 from app.database import get_db
+from app.auth import get_admin_api_key
 from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
 from app.services.diet_service import DietService
 from app.models.member import MemberState, PrimaryGoal
 
-router = APIRouter(prefix="/api/v1/members", tags=["Members"])
+router = APIRouter(prefix="/api/v1/members", tags=["Members"], dependencies=[Depends(get_admin_api_key)])
 
 
 # ========== Pydantic Models ==========

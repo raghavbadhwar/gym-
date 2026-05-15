@@ -15,6 +15,7 @@ from datetime import datetime
 import json
 
 from app.database import get_db
+from app.auth import get_admin_api_key
 from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
 from app.services.diet_service import DietService
@@ -281,7 +282,7 @@ async def quick_onboard(data: MemberOnboard, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/member/{phone}")
+@router.get("/member/{phone}", dependencies=[Depends(get_admin_api_key)])
 async def get_member_context(phone: str, db: Session = Depends(get_db)):
     """Get full member context for chat."""
     member_service = MemberService(db)
