@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 from loguru import logger
 import hmac
 from typing import Optional
+import hmac
+import hashlib
 
 from app.config import settings
 from app.database import get_db
@@ -65,6 +67,32 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
     
     Always returns 200 to prevent Meta from retrying.
     """
+    # X-Hub-Signature-256 validation
+    try:
+        if settings.whatsapp_app_secret:
+            signature = request.headers.get("X-Hub-Signature-256")
+            if not signature:
+                logger.warning("Missing X-Hub-Signature-256 header")
+                raise HTTPException(status_code=401, detail="Missing signature")
+
+            body = await request.body()
+            expected_signature = "sha256=" + hmac.new(
+                settings.whatsapp_app_secret.encode(),
+                body,
+                hashlib.sha256
+            ).hexdigest()
+
+            if not hmac.compare_digest(expected_signature, signature):
+                logger.warning("Invalid X-Hub-Signature-256")
+                raise HTTPException(status_code=401, detail="Invalid signature")
+        else:
+            logger.warning("whatsapp_app_secret is not set. Skipping signature validation. This is insecure.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating signature: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
     try:
         data = await request.json()
         logger.debug(f"Webhook payload received: {data}")
