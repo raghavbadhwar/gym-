@@ -18,6 +18,14 @@ from loguru import logger
 
 from app.config import settings
 
+# Pre-compiled regex patterns for performance
+TIME_PATTERNS = [
+    re.compile(r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))", re.IGNORECASE),
+    re.compile(r"(morning|afternoon|evening)", re.IGNORECASE),
+    re.compile(r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)", re.IGNORECASE)
+]
+TIME_MATCH_PATTERN = re.compile(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)')
+
 # Intent types as specified
 class Intent(str, Enum):
     NEW_LEAD = "NEW_LEAD"       # User saying hi/inquiring for first time
@@ -249,13 +257,8 @@ Return ONLY valid JSON:
                     break
             
             # Try to extract time
-            time_patterns = [
-                r"(\d{1,2}(?::\d{2})?\s*(?:am|pm))",
-                r"(morning|afternoon|evening)",
-                r"(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)"
-            ]
-            for pattern in time_patterns:
-                match = re.search(pattern, message, re.IGNORECASE)
+            for pattern in TIME_PATTERNS:
+                match = pattern.search(message)
                 if match:
                     if "am" in match.group() or "pm" in match.group():
                         entities["time"] = match.group()
@@ -546,7 +549,7 @@ If you cannot parse the details, return:
         
         # Extract time
         time = None
-        time_match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)', message_lower)
+        time_match = TIME_MATCH_PATTERN.search(message_lower)
         if time_match:
             hour = int(time_match.group(1))
             minute = int(time_match.group(2) or 0)
