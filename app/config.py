@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.0-flash"  # Updated to latest model
     
     # App Settings
+    cors_origins: str = "*"
     app_env: str = "development"
     app_secret_key: str = "change-this-secret-key-in-production"
     gym_name: str = "FitZone Gym"
