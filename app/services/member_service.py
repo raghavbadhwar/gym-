@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func, case
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -282,13 +282,25 @@ class MemberService:
         return q.offset(offset).limit(limit).all()
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        """
+        Get member statistics for dashboard.
+        Optimized to use a single query instead of 6 separate counts.
+        """
+        stats = self.db.query(
+            func.count(Member.id).label('total'),
+            func.sum(case((Member.current_state == MemberState.ACTIVE, 1), else_=0)).label('active'),
+            func.sum(case((Member.current_state == MemberState.AT_RISK, 1), else_=0)).label('at_risk'),
+            func.sum(case((Member.current_state == MemberState.DORMANT, 1), else_=0)).label('dormant'),
+            func.sum(case((Member.current_state == MemberState.CHURNED, 1), else_=0)).label('churned'),
+            func.sum(case((Member.current_state == MemberState.NEW, 1), else_=0)).label('new')
+        ).first()
+
+        total = stats.total if stats else 0
+        active = stats.active or 0
+        at_risk = stats.at_risk or 0
+        dormant = stats.dormant or 0
+        churned = stats.churned or 0
+        new = stats.new or 0
         
         return {
             "total": total,
