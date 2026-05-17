@@ -15,6 +15,7 @@ from enum import Enum
 from datetime import datetime, timedelta
 from dateutil import parser as date_parser
 from loguru import logger
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 
@@ -615,7 +616,7 @@ If you cannot parse the details, return:
             )
             text = response.choices[0].message.content.strip()
         elif self._gemini_model:
-            response = self._gemini_model.generate_content(prompt)
+            response = await run_in_threadpool(self._gemini_model.generate_content, prompt)
             text = response.text.strip()
         else:
             raise ValueError("No AI provider configured")
@@ -650,7 +651,7 @@ If you cannot parse the details, return:
             max_retries = 3
             for attempt in range(max_retries):
                 try:
-                    response = self._gemini_model.generate_content(prompt)
+                    response = await run_in_threadpool(self._gemini_model.generate_content, prompt)
                     return response.text.strip()
                 except Exception as e:
                     error_str = str(e).lower()
