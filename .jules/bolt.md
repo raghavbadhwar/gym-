@@ -1,0 +1,3 @@
+## 2025-04-06 - Fragile Dict Key Mapping with SQLAlchemy Enums
+**Learning:** When refactoring SQLAlchemy `.count()` queries to a single `.group_by()` returning an Enum, assuming `state.value` exactly matches hardcoded lowercase dict keys is fragile across DB dialects. In SQLite/Postgres, variations in how Enums are mapped or returned (e.g., uppercase vs lowercase strings, or Enum object wrappers) can cause dictionary assignments to fail silently if they rely on `.value`.
+**Action:** When mapping SQLAlchemy grouped Enum results to predefined dictionary keys, use a robust fallback pattern like `state.name.lower() if hasattr(state, 'name') else str(state).lower()` to ensure safe string normalization and prevent dropped counts.
