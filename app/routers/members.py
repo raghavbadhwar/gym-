@@ -9,6 +9,7 @@ from datetime import date
 from uuid import UUID
 
 from app.database import get_db
+from app.auth import get_admin_api_key
 from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
 from app.services.diet_service import DietService
@@ -263,7 +264,7 @@ async def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/")
+@router.get("/", dependencies=[Depends(get_admin_api_key)])
 def list_members(
     state: Optional[str] = None,
     goal: Optional[str] = None,
@@ -302,7 +303,7 @@ def list_members(
     }
 
 
-@router.get("/stats/overview")
+@router.get("/stats/overview", dependencies=[Depends(get_admin_api_key)])
 def get_member_stats(db: Session = Depends(get_db)):
     """Get member statistics overview."""
     service = MemberService(db)
