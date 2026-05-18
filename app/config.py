@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     
     # App Settings
     app_env: str = "development"
+    # Security: Configurable CORS origins to prevent overly permissive access in production
+    cors_origins: str = "*"
     app_secret_key: str = "change-this-secret-key-in-production"
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
