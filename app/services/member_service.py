@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -284,19 +284,21 @@ class MemberService:
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # Performance optimization: Replace N+1 count queries with a single GROUP BY
+        state_counts = dict(self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all())
+
+        active = state_counts.get(MemberState.ACTIVE, 0)
         
         return {
             "total": total,
             "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
+            "at_risk": state_counts.get(MemberState.AT_RISK, 0),
+            "dormant": state_counts.get(MemberState.DORMANT, 0),
+            "churned": state_counts.get(MemberState.CHURNED, 0),
+            "new": state_counts.get(MemberState.NEW, 0),
             "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
         }
     
