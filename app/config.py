@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # Webhook
     webhook_url: Optional[str] = None
     
+    # CORS Origins (comma separated list of allowed origins)
+    cors_origins: str = "*"
+
     # System Prompt for AI persona - Gym Specialized
     @property
     def system_prompt(self) -> str:
