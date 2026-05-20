@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     
     # App Settings
     app_env: str = "development"
+    cors_origins: str = "*"
     app_secret_key: str = "change-this-secret-key-in-production"
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
