@@ -108,9 +108,12 @@ app = FastAPI(
 )
 
 # CORS middleware
+# Security: Explicitly handle CORS configurations to prevent overly permissive access ("*")
+# which could allow malicious sites to make authenticated requests to the API.
+# Parse dynamic list from config.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
