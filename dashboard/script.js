@@ -81,10 +81,23 @@ const demoResponses = {
 document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
+    initKeyboardSupport();
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
 });
+
+// ===== Keyboard Accessibility =====
+function initKeyboardSupport() {
+    document.querySelectorAll('.command-card').forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
+}
 
 // ===== API Status Check =====
 async function checkApiStatus() {
