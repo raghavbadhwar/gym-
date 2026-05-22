@@ -10,6 +10,7 @@ This module handles:
 Uses Loguru for detailed logging as specified.
 """
 from fastapi import APIRouter, Request, Depends, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from loguru import logger
 import hmac
@@ -100,7 +101,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
         
         # ===== CHECK USER STATUS =====
         member_service = MemberService(db)
-        member = member_service.get_by_phone(phone)
+        member = await run_in_threadpool(member_service.get_by_phone, phone)
         is_new_user = member is None
         
         # ===== INTENT CLASSIFICATION =====
@@ -116,7 +117,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
             
             # Mark member for escalation if exists
             if member:
-                member_service.mark_for_escalation(phone, intent_result.get('escalation_reason'))
+                await run_in_threadpool(member_service.mark_for_escalation, phone, intent_result.get('escalation_reason'))
             
             # Send escalation response
             await whatsapp_service.send_text(phone, ai_engine.get_escalation_response())
@@ -131,7 +132,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
                     logger.error(f"Failed to notify manager: {e}")
             
             # Store escalation in DB
-            member_service.log_message(phone, content, "inbound", intent=Intent.HUMAN_HELP.value)
+            await run_in_threadpool(member_service.log_message, phone, content, "inbound", intent=Intent.HUMAN_HELP.value)
             
             return {"status": "ok", "handled": "escalation"}
         
@@ -140,7 +141,7 @@ async def receive_message(request: Request, db: Session = Depends(get_db)):
             logger.info(f"🤔 Ambiguous request detected (confidence: {confidence})")
             response = ai_engine.get_ambiguity_response(intent, intent_result.get("entities", {}))
             await whatsapp_service.send_text(phone, response)
-            member_service.log_message(phone, content, "inbound", intent=intent.value)
+            await run_in_threadpool(member_service.log_message, phone, content, "inbound", intent=intent.value)
             return {"status": "ok", "handled": "ambiguity_clarification"}
         
         # ===== MAIN MESSAGE PROCESSING =====
