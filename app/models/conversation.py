@@ -1,7 +1,7 @@
 """
 Conversation Model - Store chat history for AI memory
 """
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -14,7 +14,7 @@ class Conversation(Base):
     __tablename__ = "conversations"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    member_id = Column(String(36), ForeignKey("members.id"), nullable=False, index=True)
+    member_id = Column(String(36), ForeignKey("members.id"), nullable=False)
     
     # Message details
     role = Column(String(20), nullable=False)  # 'user' or 'assistant'
@@ -24,6 +24,12 @@ class Conversation(Base):
     # Metadata
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     
+    __table_args__ = (
+        # Composite index for efficient history retrieval:
+        # Filters by member_id AND sorts by created_at without a separate sort step.
+        Index("ix_conversations_member_id_created_at", "member_id", "created_at"),
+    )
+
     # Relationships
     member = relationship("Member", back_populates="conversations")
     
