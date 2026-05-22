@@ -149,7 +149,7 @@ def update_member(phone: str, updates: MemberUpdate, db: Session = Depends(get_d
 
 
 @router.post("/{phone}/checkin")
-async def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
+def record_checkin(phone: str, checkin: CheckinCreate, db: Session = Depends(get_db)):
     """Record a weekly check-in for a member."""
     member_service = MemberService(db)
     workout_service = WorkoutService(db)
