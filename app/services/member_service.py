@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,12 +283,28 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # Optimize to single query using group by
+        # Returns list of (state, count) tuples
+        stats_query = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # Convert to dictionary
+        stats_map = {state: count for state, count in stats_query}
+
+        # Helper to safely get count
+        def get_count(state):
+            return stats_map.get(state, 0)
+
+        active = get_count(MemberState.ACTIVE)
+        at_risk = get_count(MemberState.AT_RISK)
+        dormant = get_count(MemberState.DORMANT)
+        churned = get_count(MemberState.CHURNED)
+        new = get_count(MemberState.NEW)
+
+        # Total is sum of all states
+        total = sum(stats_map.values())
         
         return {
             "total": total,
