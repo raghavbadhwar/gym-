@@ -84,6 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
+
+    // Initialize keyboard support for command cards
+    initCommandCards();
 });
 
 // ===== API Status Check =====
@@ -334,6 +337,19 @@ document.getElementById('simulatorModal').addEventListener('click', function (e)
         closeSimulator();
     }
 });
+
+// ===== Keyboard Support for Command Cards =====
+function initCommandCards() {
+    const cards = document.querySelectorAll('.command-card');
+    cards.forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
+}
 
 // ===== Keyboard navigation for modal =====
 document.addEventListener('keydown', function (e) {
