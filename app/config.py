@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     whatsapp_business_account_id: str = ""
     whatsapp_access_token: str = ""
     whatsapp_verify_token: str = "gymbuddy_verify_token_2026"
+    whatsapp_app_secret: str = ""  # For signature verification (HMAC-SHA256)
     whatsapp_api_url: str = "https://graph.facebook.com/v18.0"
     
     # AI Configuration - Choose your provider
