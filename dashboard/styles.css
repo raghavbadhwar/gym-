@@ -604,6 +604,16 @@ body {
     transform: translateX(4px);
 }
 
+button.command-card {
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
 .cmd-icon {
     font-size: 32px;
 }
