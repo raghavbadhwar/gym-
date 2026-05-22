@@ -163,6 +163,7 @@ let currentUserName = 'Demo User';
 
 async function sendMessage() {
     const input = document.getElementById('chatInput');
+    const sendBtn = document.querySelector('.send-btn');
     const text = input.value.trim();
 
     if (!text) return;
@@ -173,6 +174,12 @@ async function sendMessage() {
 
     // Add typing indicator
     addTypingIndicator();
+
+    // Set loading state
+    if (sendBtn) {
+        sendBtn.classList.add('loading');
+        sendBtn.disabled = true;
+    }
 
     try {
         // Call the REAL AI API
@@ -215,6 +222,12 @@ async function sendMessage() {
             addMessage('incoming', demoResponse.messages[1].text + '\n\n_(Offline mode - using cached response)_');
         } else {
             addMessage('incoming', `⚠️ Cannot connect to AI. Make sure the server is running at ${API_BASE}\n\nRun: uvicorn app.main:app --reload --port 8000`);
+        }
+    } finally {
+        // Remove loading state
+        if (sendBtn) {
+            sendBtn.classList.remove('loading');
+            sendBtn.disabled = false;
         }
     }
 }
