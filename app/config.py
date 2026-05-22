@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     whatsapp_access_token: str = ""
     whatsapp_verify_token: str = "gymbuddy_verify_token_2026"
     whatsapp_api_url: str = "https://graph.facebook.com/v18.0"
+    whatsapp_app_secret: str = ""  # WhatsApp App Secret for webhook signature verification
     
     # AI Configuration - Choose your provider
     ai_provider: Literal["openai", "gemini"] = "openai"  # openai or gemini
