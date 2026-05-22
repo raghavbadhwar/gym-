@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # Webhook
     webhook_url: Optional[str] = None
     
+    # Admin Auth
+    admin_api_key: str = "dev-admin-key-change-in-prod"
+
     # System Prompt for AI persona - Gym Specialized
     @property
     def system_prompt(self) -> str:
