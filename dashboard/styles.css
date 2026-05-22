@@ -604,6 +604,12 @@ body {
     transform: translateX(4px);
 }
 
+.command-card:focus-visible {
+    outline: none;
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.3);
+}
+
 .cmd-icon {
     font-size: 32px;
 }
