@@ -107,10 +107,15 @@ app = FastAPI(
     redoc_url="/redoc" if settings.app_env != "production" else None
 )
 
+# Security: Fix overly permissive CORS configuration.
+# allow_origins=["*"] can expose the API to unauthorized cross-origin requests.
+# Use an environment variable to securely configure allowed origins in production.
+origins = [origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins=origins,  # Configure properly for production via cors_origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
