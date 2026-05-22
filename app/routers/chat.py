@@ -21,9 +21,13 @@ from app.services.diet_service import DietService
 from app.services.ai_service import ai_service
 from app.services.ai_engine import ai_engine, Intent
 from app.config import settings
+from app.rate_limit import RateLimiter
 from loguru import logger
 
 router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
+
+# Rate limiter: 10 requests per minute per IP
+chat_rate_limit = RateLimiter(requests=10, window=60)
 
 
 # ========== Pydantic Models ==========
@@ -60,7 +64,7 @@ class MemberOnboard(BaseModel):
 
 # ========== Endpoints ==========
 
-@router.post("/message", response_model=ChatResponse)
+@router.post("/message", response_model=ChatResponse, dependencies=[Depends(chat_rate_limit)])
 async def send_chat_message(chat: ChatMessage, db: Session = Depends(get_db)):
     """
     Send a chat message and get AI-powered personalized response.
