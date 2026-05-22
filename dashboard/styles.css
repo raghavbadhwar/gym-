@@ -596,12 +596,24 @@ body {
     border-radius: 16px;
     cursor: pointer;
     transition: all var(--transition-smooth);
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
 }
 
 .command-card:hover {
     background: var(--bg-card-hover);
     border-color: var(--border-glow);
     transform: translateX(4px);
+}
+
+.command-card:focus-visible {
+    outline: none;
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 2px var(--border-glow);
 }
 
 .cmd-icon {
