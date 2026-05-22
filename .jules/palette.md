@@ -1,0 +1,3 @@
+## 2026-02-20 - Command Card Accessibility
+**Learning:** Interactive cards implemented as `<div>`s with `onclick` are inaccessible to keyboard users and screen readers. Replacing them with `<button>` elements requires careful CSS resets (`appearance: none`, `text-align: left`, `width: 100%`) to maintain the visual design while gaining native accessibility benefits.
+**Action:** When creating interactive card-like elements, start with `<button>` or `<a>` tags and reset styles, rather than adding ARIA roles and tabindices to `<div>`s. Use `:focus-visible` to provide clear focus indicators for keyboard users without affecting mouse users.
