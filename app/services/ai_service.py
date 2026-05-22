@@ -28,7 +28,7 @@ class AIService:
             self.model = None
             logger.warning("Gemini API key not configured. AI features disabled.")
     
-    async def generate_workout_plan(
+    def generate_workout_plan(
         self,
         goal: str,
         experience_level: str,
@@ -120,13 +120,13 @@ Return ONLY valid JSON in this exact format:
 Include exercises appropriate for a gym in India."""
 
         try:
-            response = await self._generate_json(prompt)
+            response = self._generate_json(prompt)
             return response
         except Exception as e:
             logger.error(f"Error generating workout plan: {e}")
             return self._get_default_workout_plan(goal, days_per_week)
     
-    async def generate_diet_plan(
+    def generate_diet_plan(
         self,
         goal: str,
         dietary_preference: str,  # veg, non_veg, eggetarian, vegan
@@ -228,13 +228,13 @@ Return ONLY valid JSON in this exact format:
 }}"""
 
         try:
-            response = await self._generate_json(prompt)
+            response = self._generate_json(prompt)
             return response
         except Exception as e:
             logger.error(f"Error generating diet plan: {e}")
             return self._get_default_diet_plan(goal, dietary_preference)
     
-    async def classify_intent(self, message: str) -> Dict[str, Any]:
+    def classify_intent(self, message: str) -> Dict[str, Any]:
         """
         Classify user intent from a message.
         
@@ -280,13 +280,13 @@ Return ONLY valid JSON:
 }}"""
 
         try:
-            response = await self._generate_json(prompt)
+            response = self._generate_json(prompt)
             return response
         except Exception as e:
             logger.error(f"Error classifying intent: {e}")
             return self._simple_intent_classification(message)
     
-    async def adapt_plan(
+    def adapt_plan(
         self,
         current_plan: Dict,
         progress_data: Dict,
@@ -339,13 +339,13 @@ Return ONLY valid JSON:
 }}"""
 
         try:
-            response = await self._generate_json(prompt)
+            response = self._generate_json(prompt)
             return response
         except Exception as e:
             logger.error(f"Error adapting plan: {e}")
             return {"should_adapt": False, "adaptations": [], "new_plan": current_plan}
     
-    async def _generate_json(self, prompt: str) -> Dict:
+    def _generate_json(self, prompt: str) -> Dict:
         """Generate JSON response from Gemini."""
         response = self.model.generate_content(prompt)
         text = response.text.strip()
