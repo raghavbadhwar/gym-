@@ -82,6 +82,16 @@ document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
 
+    // Add keyboard support for command cards
+    document.querySelectorAll('.command-card').forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+            }
+        });
+    });
+
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
 });
