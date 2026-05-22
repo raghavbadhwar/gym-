@@ -13,6 +13,7 @@ from app.services.member_service import MemberService
 from app.services.workout_service import WorkoutService
 from app.services.diet_service import DietService
 from app.models.member import MemberState, PrimaryGoal
+from app.auth import get_admin_api_key
 
 router = APIRouter(prefix="/api/v1/members", tags=["Members"])
 
@@ -270,9 +271,10 @@ def list_members(
     query: Optional[str] = None,
     limit: int = Query(50, le=100),
     offset: int = 0,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    api_key: str = Depends(get_admin_api_key)
 ):
-    """List members with optional filters."""
+    """List members with optional filters. Protected by Admin API Key."""
     service = MemberService(db)
     
     state_enum = MemberState(state) if state else None
@@ -303,7 +305,7 @@ def list_members(
 
 
 @router.get("/stats/overview")
-def get_member_stats(db: Session = Depends(get_db)):
-    """Get member statistics overview."""
+def get_member_stats(db: Session = Depends(get_db), api_key: str = Depends(get_admin_api_key)):
+    """Get member statistics overview. Protected by Admin API Key."""
     service = MemberService(db)
     return service.get_stats()
