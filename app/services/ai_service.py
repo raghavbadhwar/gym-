@@ -347,7 +347,7 @@ Return ONLY valid JSON:
     
     async def _generate_json(self, prompt: str) -> Dict:
         """Generate JSON response from Gemini."""
-        response = self.model.generate_content(prompt)
+        response = await self.model.generate_content_async(prompt)
         text = response.text.strip()
         
         # Clean up response - remove markdown code blocks if present
