@@ -604,6 +604,20 @@ body {
     transform: translateX(4px);
 }
 
+button.command-card {
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+    outline: none;
+}
+
+button.command-card:focus-visible {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 2px var(--border-glow);
+}
+
 .cmd-icon {
     font-size: 32px;
 }
