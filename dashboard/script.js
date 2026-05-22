@@ -81,6 +81,7 @@ const demoResponses = {
 document.addEventListener('DOMContentLoaded', () => {
     checkApiStatus();
     initChat();
+    initKeyboardNavigation();
 
     // Check API status every 30 seconds
     setInterval(checkApiStatus, 30000);
@@ -341,3 +342,23 @@ document.addEventListener('keydown', function (e) {
         closeSimulator();
     }
 });
+
+// ===== Keyboard Navigation =====
+function initKeyboardNavigation() {
+    const cards = document.querySelectorAll('.command-card');
+    cards.forEach(card => {
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                // Extract command from onclick attribute
+                const onClick = card.getAttribute('onclick');
+                if (onClick) {
+                    const match = onClick.match(/'(.*)'/);
+                    if (match && match[1]) {
+                        simulateCommand(match[1]);
+                    }
+                }
+            }
+        });
+    });
+}
