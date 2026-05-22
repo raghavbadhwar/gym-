@@ -23,12 +23,17 @@ class MemberService:
     def __init__(self, db: Session):
         self.db = db
     
+    @staticmethod
+    def normalize_phone(phone: str) -> str:
+        """Normalize phone number (remove + and spaces)."""
+        return phone.replace("+", "").replace(" ", "").strip()
+
     def get_by_phone(self, phone: str) -> Optional[Member]:
         """Get member by phone number."""
         # Normalize phone number (remove + and spaces)
-        normalized = phone.replace("+", "").replace(" ", "").strip()
+        normalized = self.normalize_phone(phone)
         return self.db.query(Member).filter(
-            Member.phone.in_([phone, normalized, f"+{normalized}"])
+            Member.phone == normalized
         ).first()
     
     def get_by_id(self, member_id: UUID) -> Optional[Member]:
@@ -54,7 +59,7 @@ class MemberService:
             **kwargs: Additional member attributes
         """
         # Normalize phone
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         
         member = Member(
             phone=phone,
@@ -163,7 +168,7 @@ class MemberService:
             phone: Member's phone number
             reason: Reason for escalation
         """
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         member = self.get_by_phone(phone)
         
         if member:
@@ -208,7 +213,7 @@ class MemberService:
             intent: Detected intent (optional)
             message_type: Message type (text, image, etc.)
         """
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         member = self.get_by_phone(phone)
         
         message = Message(
@@ -306,7 +311,7 @@ class MemberService:
         limit: int = 20
     ) -> List[Message]:
         """Get recent conversation history for a member."""
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         return self.db.query(Message).filter(
             Message.phone == phone
         ).order_by(Message.created_at.desc()).limit(limit).all()
@@ -314,7 +319,7 @@ class MemberService:
     # Conversation State Management
     def get_conversation_state(self, phone: str) -> Optional[ConversationState]:
         """Get current conversation state for a phone number."""
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         return self.db.query(ConversationState).filter(
             ConversationState.phone == phone
         ).first()
@@ -327,7 +332,7 @@ class MemberService:
         data: dict = None
     ) -> ConversationState:
         """Set or update conversation state."""
-        phone = phone.replace("+", "").replace(" ", "").strip()
+        phone = self.normalize_phone(phone)
         state = self.get_conversation_state(phone)
         
         if state:
