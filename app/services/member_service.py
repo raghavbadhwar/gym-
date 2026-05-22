@@ -283,12 +283,24 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        from sqlalchemy import func
+
+        # Optimize: Use a single query with GROUP BY instead of 6 separate count queries
+        stats_query = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # Convert list of tuples to dict
+        stats_dict = dict(stats_query)
+
+        active = stats_dict.get(MemberState.ACTIVE, 0)
+        at_risk = stats_dict.get(MemberState.AT_RISK, 0)
+        dormant = stats_dict.get(MemberState.DORMANT, 0)
+        churned = stats_dict.get(MemberState.CHURNED, 0)
+        new = stats_dict.get(MemberState.NEW, 0)
+
+        # Calculate total from all groups (including any None or other states)
+        total = sum(stats_dict.values())
         
         return {
             "total": total,
