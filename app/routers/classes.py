@@ -9,10 +9,11 @@ from datetime import datetime, date
 from uuid import UUID
 
 from app.database import get_db
+from app.security import verify_api_key
 from app.services.member_service import MemberService
 from app.services.booking_service import BookingService
 
-router = APIRouter(prefix="/api/v1/classes", tags=["Classes"])
+router = APIRouter(prefix="/api/v1/classes", tags=["Classes"], dependencies=[Depends(verify_api_key)])
 
 
 # ========== Pydantic Models ==========

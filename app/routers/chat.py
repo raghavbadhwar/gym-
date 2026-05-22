@@ -21,9 +21,10 @@ from app.services.diet_service import DietService
 from app.services.ai_service import ai_service
 from app.services.ai_engine import ai_engine, Intent
 from app.config import settings
+from app.security import verify_api_key
 from loguru import logger
 
-router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
+router = APIRouter(prefix="/api/v1/chat", tags=["Chat"], dependencies=[Depends(verify_api_key)])
 
 
 # ========== Pydantic Models ==========
