@@ -1,7 +1,7 @@
 """
 Conversation Model - Store chat history for AI memory
 """
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -12,9 +12,12 @@ from app.database import Base
 class Conversation(Base):
     """Store conversation history for each member."""
     __tablename__ = "conversations"
+    __table_args__ = (
+        Index('ix_conversations_member_id_created_at', 'member_id', 'created_at'),
+    )
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    member_id = Column(String(36), ForeignKey("members.id"), nullable=False, index=True)
+    member_id = Column(String(36), ForeignKey("members.id"), nullable=False)
     
     # Message details
     role = Column(String(20), nullable=False)  # 'user' or 'assistant'
