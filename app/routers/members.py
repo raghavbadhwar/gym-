@@ -221,7 +221,7 @@ async def generate_workout_plan(phone: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{phone}/diet")
-async def get_diet_plan(phone: str, db: Session = Depends(get_db)):
+def get_diet_plan(phone: str, db: Session = Depends(get_db)):
     """Get current diet plan for a member."""
     member_service = MemberService(db)
     diet_service = DietService(db)
