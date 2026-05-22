@@ -22,8 +22,9 @@ from app.services.ai_service import ai_service
 from app.services.ai_engine import ai_engine, Intent
 from app.config import settings
 from loguru import logger
+from app.auth import get_admin_api_key
 
-router = APIRouter(prefix="/api/v1/chat", tags=["Chat"])
+router = APIRouter(prefix="/api/v1/chat", tags=["Chat"], dependencies=[Depends(get_admin_api_key)])
 
 
 # ========== Pydantic Models ==========
