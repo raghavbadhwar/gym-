@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,20 +283,31 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # Execute single query to group by state
+        results = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # Convert to dictionary
+        counts = {state: 0 for state in MemberState}
+
+        # Calculate total from all results (including any not in MemberState enum if that were possible)
+        total = 0
+        for state, count in results:
+            total += count
+            if state in counts:
+                counts[state] = count
+
+        active = counts[MemberState.ACTIVE]
         
         return {
             "total": total,
             "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
+            "at_risk": counts[MemberState.AT_RISK],
+            "dormant": counts[MemberState.DORMANT],
+            "churned": counts[MemberState.CHURNED],
+            "new": counts[MemberState.NEW],
             "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
         }
     
