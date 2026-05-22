@@ -596,6 +596,20 @@ body {
     border-radius: 16px;
     cursor: pointer;
     transition: all var(--transition-smooth);
+
+    /* Button reset */
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+    color: inherit;
+    font-size: inherit;
+}
+
+.command-card:focus-visible {
+    outline: 2px solid var(--border-glow);
+    outline-offset: 2px;
 }
 
 .command-card:hover {
