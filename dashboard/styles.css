@@ -596,6 +596,17 @@ body {
     border-radius: 16px;
     cursor: pointer;
     transition: all var(--transition-smooth);
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+.command-card:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--border-glow);
 }
 
 .command-card:hover {
