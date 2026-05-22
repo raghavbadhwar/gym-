@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # App Settings
     app_env: str = "development"
     app_secret_key: str = "change-this-secret-key-in-production"
+    admin_api_key: str = "gymbuddy_admin_secret_2024"  # Default for dev, override in prod
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
