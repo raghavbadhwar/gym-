@@ -1,0 +1,4 @@
+## 2026-02-26 - [WhatsApp Webhook Missing Signature Verification]
+**Vulnerability:** The WhatsApp webhook endpoint (`/api/v1/webhooks/whatsapp`) accepted messages without verifying the `X-Hub-Signature-256` header, allowing attackers to spoof messages and manipulate AI/DB state.
+**Learning:** Production-ready webhook endpoints often lack signature verification by default. Relying on obscurity (URL path) is insufficient. The `app.config.settings` lacked the `whatsapp_app_secret` field entirely, making verification impossible without code changes.
+**Prevention:** Implement HMAC-SHA256 signature verification as a mandatory FastAPI dependency (`validate_whatsapp_signature`). Use `hmac.compare_digest` to prevent timing attacks. Enforce configuration of the App Secret in `app/config.py` and fail or warn loudly if missing.
