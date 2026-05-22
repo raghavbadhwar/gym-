@@ -23,7 +23,7 @@ class DietService:
     def __init__(self, db: Session):
         self.db = db
     
-    async def generate_plan(
+    def generate_plan(
         self,
         member: Member,
         week_number: int = 1,
@@ -46,7 +46,7 @@ class DietService:
         diet_pref = member.dietary_preference.value if member.dietary_preference else "non_veg"
         
         # Generate plan using AI
-        plan_data = await ai_service.generate_diet_plan(
+        plan_data = ai_service.generate_diet_plan(
             goal=goal,
             dietary_preference=diet_pref,
             current_weight=member.current_weight_kg or 70,

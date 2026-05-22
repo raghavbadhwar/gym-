@@ -240,7 +240,7 @@ async def get_diet_plan(phone: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{phone}/diet/generate")
-async def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
+def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
     """Generate a new diet plan for a member."""
     member_service = MemberService(db)
     diet_service = DietService(db)
@@ -253,7 +253,7 @@ async def generate_diet_plan(phone: str, db: Session = Depends(get_db)):
     current = diet_service.get_current_plan(member.id)
     week_number = (current.week_number + 1) if current else 1
     
-    plan = await diet_service.generate_plan(member, week_number=week_number)
+    plan = diet_service.generate_plan(member, week_number=week_number)
     
     return {
         "message": "Diet plan generated",

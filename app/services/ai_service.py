@@ -5,6 +5,7 @@ import json
 import logging
 from typing import Optional, Dict, Any, List
 import google.generativeai as genai
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 
@@ -126,7 +127,7 @@ Include exercises appropriate for a gym in India."""
             logger.error(f"Error generating workout plan: {e}")
             return self._get_default_workout_plan(goal, days_per_week)
     
-    async def generate_diet_plan(
+    def generate_diet_plan(
         self,
         goal: str,
         dietary_preference: str,  # veg, non_veg, eggetarian, vegan
@@ -228,7 +229,7 @@ Return ONLY valid JSON in this exact format:
 }}"""
 
         try:
-            response = await self._generate_json(prompt)
+            response = self._generate_json_sync(prompt)
             return response
         except Exception as e:
             logger.error(f"Error generating diet plan: {e}")
@@ -346,7 +347,11 @@ Return ONLY valid JSON:
             return {"should_adapt": False, "adaptations": [], "new_plan": current_plan}
     
     async def _generate_json(self, prompt: str) -> Dict:
-        """Generate JSON response from Gemini."""
+        """Generate JSON response from Gemini (Async wrapper)."""
+        return await run_in_threadpool(self._generate_json_sync, prompt)
+
+    def _generate_json_sync(self, prompt: str) -> Dict:
+        """Generate JSON response from Gemini (Synchronous)."""
         response = self.model.generate_content(prompt)
         text = response.text.strip()
         
