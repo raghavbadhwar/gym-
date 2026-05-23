@@ -283,12 +283,24 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
+        from sqlalchemy import func
+
+        # Keep total explicit to include members with NULL current_state
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # Optimize by replacing multiple queries with a single GROUP BY query
+        state_counts = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # Safely map to dict using raw enum instances as keys
+        counts = {state: count for state, count in state_counts if state is not None}
+
+        active = counts.get(MemberState.ACTIVE, 0)
+        at_risk = counts.get(MemberState.AT_RISK, 0)
+        dormant = counts.get(MemberState.DORMANT, 0)
+        churned = counts.get(MemberState.CHURNED, 0)
+        new = counts.get(MemberState.NEW, 0)
         
         return {
             "total": total,
