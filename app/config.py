@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # Webhook
     webhook_url: Optional[str] = None
     
+    # Security: Overly permissive CORS (allow_origins=["*"]) is a security risk in production.
+    # We use a configuration variable to allow environment-specific safe origins.
+    cors_origins: str = "*"
+
     # System Prompt for AI persona - Gym Specialized
     @property
     def system_prompt(self) -> str:

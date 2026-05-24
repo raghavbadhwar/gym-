@@ -108,9 +108,10 @@ app = FastAPI(
 )
 
 # CORS middleware
+# Security: Dynamically parse cors_origins to avoid hardcoded overly permissive allow_origins=["*"] in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
