@@ -108,9 +108,10 @@ app = FastAPI(
 )
 
 # CORS middleware
+# Security: Safely parse the configured origins and restrict CORS to authorized domains.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],  # Configure properly for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
