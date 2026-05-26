@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
     
+    # Security: Comma-separated list of allowed origins to prevent overly permissive CORS in production
+    cors_origins: str = "*"
+
     # Escalation Settings (for HUMAN_HELP intent)
     manager_phone: str = ""  # Manager's WhatsApp for escalation
     escalation_email: str = ""  # Email for escalation notifications
