@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,20 +283,38 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
+        # Calculate overall total separately to include members with NULL states
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # ⚡ Bolt Optimization: Replaced 5 individual N+1 .count() queries with a single GROUP BY
+        # Expected Impact: Reduces database queries from 6 to 2, improving dashboard load time
+        state_counts = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        # Initialize counts safely using raw Enum instances as keys
+        counts = {
+            MemberState.ACTIVE: 0,
+            MemberState.AT_RISK: 0,
+            MemberState.DORMANT: 0,
+            MemberState.CHURNED: 0,
+            MemberState.NEW: 0,
+        }
+
+        for state, count in state_counts:
+            if state in counts:
+                counts[state] = count
+
+        active = counts[MemberState.ACTIVE]
         
         return {
             "total": total,
             "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
+            "at_risk": counts[MemberState.AT_RISK],
+            "dormant": counts[MemberState.DORMANT],
+            "churned": counts[MemberState.CHURNED],
+            "new": counts[MemberState.NEW],
             "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
         }
     
