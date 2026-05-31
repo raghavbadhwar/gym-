@@ -1,0 +1,3 @@
+## 2024-05-31 - Optimize member stats grouping query
+**Learning:** In SQLAlchemy, executing multiple `.count()` queries sequentially for different Enum states on the same model is highly inefficient (N+1 query problem).
+**Action:** Always group these into a single query using `func.count(Model.id)` combined with `group_by(Model.state)`. When doing so, be sure to map the grouped results safely into a dictionary using the raw Enum instance (e.g. `MemberState.ACTIVE`) rather than trying to map via strings, as SQLAlchemy will return the Enum instances themselves. Also, calculate overall `total` separately to include records where the state might be `NULL`.
