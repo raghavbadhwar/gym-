@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     app_secret_key: str = "change-this-secret-key-in-production"
     gym_name: str = "FitZone Gym"
     gym_phone: str = "+919876543210"
+    cors_origins: str = "*"
     
     # Escalation Settings (for HUMAN_HELP intent)
     manager_phone: str = ""  # Manager's WhatsApp for escalation
