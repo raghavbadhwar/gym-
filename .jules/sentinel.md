@@ -1,0 +1,4 @@
+## 2025-02-24 - Overly Permissive CORS Configuration Fixed
+**Vulnerability:** The FastAPI application used `allow_origins=["*"]` in its `CORSMiddleware` configuration inside `app/main.py`. This allowed any cross-origin request to access the backend API.
+**Learning:** Hardcoded wildcard CORS origins introduce significant risk, especially for a production backend that exposes webhooks and member data. Disabling it abruptly by setting `allow_origins=[]` would completely break legitimate frontend clients.
+**Prevention:** Always extract CORS allowed origins to an environment variable via `app/config.py` (e.g., `cors_origins: str = "*"` for default backward compatibility) and dynamically parse them in the middleware using list comprehension: `allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()]`.
