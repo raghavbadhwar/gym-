@@ -1,0 +1,3 @@
+## 2026-06-02 - Multiple Separate .count() Queries for Categorical Enums
+**Learning:** Performing multiple independent `.count()` queries filtering on the same categorical column (`current_state`) generates unnecessary database roundtrips, scaling linearly with the number of enum states.
+**Action:** Replace separate `.count()` filtering queries with a single `GROUP BY` query on the categorical column (e.g., `db.query(Model.state, func.count(Model.id)).group_by(Model.state)`). Always maintain a separate `.count()` query on the whole model to capture records with `NULL` or unmapped categorical states.
