@@ -1,0 +1,4 @@
+## 2024-03-02 - Mass Assignment Vulnerability in Student Update Endpoint
+**Vulnerability:** The PUT `/students/:id` endpoint passed `req.body` directly to `storage.updateStudent()`. While the endpoint checked `student.tenantId !== tenantId` against the existing record, a malicious payload could include `{ tenantId: "other-tenant" }`, modifying the record to belong to another tenant.
+**Learning:** Checking authorization against the *existing* database record is insufficient if the update operation blindly accepts client-provided payload fields. Express routing middleware does not automatically strip fields from `req.body` unless strictly validated (e.g., using a schema like Zod).
+**Prevention:** Explicitly destruct/omit sensitive fields (`tenantId`, `id`) from `req.body` before passing the data to the update operation, or use a strict validation schema to allow only permitted fields.

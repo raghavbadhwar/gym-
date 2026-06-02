@@ -98,7 +98,8 @@ router.put("/students/:id", async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
 
-        const updated = await storage.updateStudent(req.params.id, req.body);
+        const { tenantId: _tenantId, id: _id, ...updateData } = req.body;
+        const updated = await storage.updateStudent(req.params.id, updateData);
         if (!updated) {
             return res.status(404).json({ message: "Student not found" });
         }
