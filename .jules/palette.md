@@ -1,0 +1,3 @@
+## 2026-04-06 - Accessible Dashboard Inputs and Icon Buttons
+**Learning:** Found multiple form inputs and icon-only SVG buttons in the application dashboard that lacked descriptive `aria-label`s, rendering them non-communicative for screen readers. Given the reliance on interactive features in the dashboard, like the chat modal and test simulator, these omissions severely restrict keyboard and assistive technology usage.
+**Action:** When creating text inputs missing a visible label or buttons using only SVGs, invariably ensure an `aria-label` is applied matching the element's distinct function.
