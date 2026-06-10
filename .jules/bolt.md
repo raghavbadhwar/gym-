@@ -1,0 +1,3 @@
+## 2024-03-24 - Group By Performance Gain
+**Learning:** Using a single \`GROUP BY\` query to aggregate counts across enum states instead of individual `.count()` queries drastically reduces DB load, replacing an N+1 query pattern with a single robust map lookup (using the raw enum instance as the dictionary key).
+**Action:** When calculating statistics that aggregate multiple states of the same entity column (e.g., getting a count of active, dormant, etc. users), prefer using \`func.count\` and \`.group_by\` combined with dict instantiation rather than chained \`query.filter(…).count()\` calls.
