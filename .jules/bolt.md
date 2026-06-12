@@ -1,0 +1,3 @@
+## 2024-06-12 - N+1 Enum Counts in Dashboard Stats
+**Learning:** The dashboard `get_stats` method previously executed 5 separate `COUNT()` queries, plus one for the total, directly sequentially on the same model endpoint. It is critical to refactor multiple discrete count queries into a single `GROUP BY` query.
+**Action:** When gathering multiple counts by a single enum column like `MemberState`, use a single `.group_by(Member.current_state)` with `func.count(Member.id)` query to extract all the states simultaneously and map them. Leave the `total` separate if there's a chance of `NULL` states.
