@@ -462,35 +462,47 @@ class BookingService:
         """Get class utilization statistics."""
         cutoff = datetime.utcnow() - timedelta(days=days)
         
-        classes = self.db.query(Class).filter(
+        # ⚡ Bolt: Replaced O(N) memory iteration of all Class objects with efficient database-level
+        # aggregations using group_by to significantly reduce memory footprint and execution time.
+        stats_query = self.db.query(
+            Class.class_type,
+            func.count(Class.id).label('class_count'),
+            func.sum(Class.capacity).label('total_capacity'),
+            func.sum(Class.booked_count).label('total_booked')
+        ).filter(
             and_(
                 Class.scheduled_at >= cutoff,
                 Class.scheduled_at < datetime.utcnow(),
                 Class.is_cancelled == False
             )
-        ).all()
+        ).group_by(Class.class_type).all()
         
-        if not classes:
+        if not stats_query:
             return {"total_classes": 0, "avg_utilization": 0}
-        
-        total_capacity = sum(c.capacity for c in classes)
-        total_booked = sum(c.booked_count for c in classes)
-        
-        # By class type
+
+        total_classes = 0
+        total_capacity = 0
+        total_booked = 0
         by_type = {}
-        for c in classes:
-            if c.class_type not in by_type:
-                by_type[c.class_type] = {"capacity": 0, "booked": 0}
-            by_type[c.class_type]["capacity"] += c.capacity
-            by_type[c.class_type]["booked"] += c.booked_count
         
-        for ct in by_type:
-            by_type[ct]["utilization"] = round(
-                (by_type[ct]["booked"] / by_type[ct]["capacity"]) * 100, 1
-            ) if by_type[ct]["capacity"] > 0 else 0
+        for row in stats_query:
+            class_type = row.class_type
+            class_count = row.class_count or 0
+            cap = row.total_capacity or 0
+            booked = row.total_booked or 0
+
+            total_classes += class_count
+            total_capacity += cap
+            total_booked += booked
+
+            by_type[class_type] = {
+                "capacity": cap,
+                "booked": booked,
+                "utilization": round((booked / cap) * 100, 1) if cap > 0 else 0
+            }
         
         return {
-            "total_classes": len(classes),
+            "total_classes": total_classes,
             "total_capacity": total_capacity,
             "total_booked": total_booked,
             "avg_utilization": round((total_booked / total_capacity) * 100, 1) if total_capacity > 0 else 0,
