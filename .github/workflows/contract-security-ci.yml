@@ -11,12 +11,12 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'CredVerseIssuer 3/contracts/**'
+      - 'CredVerseIssuer/contracts/**'
       - '.github/workflows/contract-security-ci.yml'
   push:
     branches: [ main, master ]
     paths:
-      - 'CredVerseIssuer 3/contracts/**'
+      - 'CredVerseIssuer/contracts/**'
 
 jobs:
   contract-security:
@@ -24,16 +24,15 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: CredVerseIssuer 3/contracts
+        working-directory: CredVerseIssuer/contracts
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'CredVerseIssuer 3/contracts/package-lock.json'
-      - run: npm ci
-      - run: npm run analyze:static
+      - run: npm i -g pnpm
+      - run: pnpm install
+      - run: pnpm run analyze:static
 
   evidence-pack:
     needs: contract-security
