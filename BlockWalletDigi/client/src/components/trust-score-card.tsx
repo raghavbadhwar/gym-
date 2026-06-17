@@ -148,6 +148,7 @@ export function TrustScoreCard() {
             <div className="p-4 space-y-4">
                 <button
                     onClick={() => setShowBreakdown(!showBreakdown)}
+                    aria-expanded={showBreakdown}
                     className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <span className="font-medium">Score Breakdown</span>
