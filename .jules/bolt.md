@@ -1,0 +1,3 @@
+## 2026-04-02 - Optimize member state aggregation
+**Learning:** Multiple SQLAlchemy `.count()` queries for different Enum states trigger unnecessary repeated database trips. When caching or returning dictionary-mapped results from a `.group_by()` on an Enum column, the query returns the actual Enum object instead of its underlying string value, which requires safe fallback handling (`state.value if hasattr(state, 'value') else state`) to prevent mapping errors.
+**Action:** Replace multiple scalar `.count()` queries with a single aggregate `query(...).group_by(...)` and handle the Enum objects properly during dictionary assignment.

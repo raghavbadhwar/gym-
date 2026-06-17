@@ -282,22 +282,45 @@ class MemberService:
         return q.offset(offset).limit(limit).all()
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get member statistics for dashboard."""
+        """
+        Get member statistics for dashboard.
+        ⚡ Bolt: Optimized to use a single group_by query instead of 5 separate counts.
+        """
+        from sqlalchemy import func
+
+        # Calculate overall total directly to account for any members missing a state
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
         
+        state_counts = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        stats = {
+            "active": 0,
+            "at_risk": 0,
+            "dormant": 0,
+            "churned": 0,
+            "new": 0,
+        }
+
+        for state, count in state_counts:
+            state_key = state.value if hasattr(state, 'value') else state
+
+            if state_key is None:
+                continue
+            elif isinstance(state_key, str):
+                state_key = state_key.lower()
+
+            stats[state_key] = count
+
         return {
             "total": total,
-            "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
-            "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
+            "active": stats.get("active", 0),
+            "at_risk": stats.get("at_risk", 0),
+            "dormant": stats.get("dormant", 0),
+            "churned": stats.get("churned", 0),
+            "new": stats.get("new", 0),
+            "retention_rate": round((stats.get("active", 0) / total) * 100, 1) if total > 0 else 0
         }
     
     def get_conversation_history(
