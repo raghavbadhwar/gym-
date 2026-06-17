@@ -11,6 +11,7 @@ import {
     verifyAccessToken,
     authMiddleware,
     checkRateLimit,
+    validatePasswordStrength,
     AuthUser,
 } from '@credverse/shared-auth';
 import { isTwoFactorEnabled, getTwoFactorStatus } from '../services/two-factor';
@@ -30,6 +31,12 @@ router.post('/auth/register', async (req, res) => {
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password required' });
+        }
+
+        // Validate password strength
+        const strength = validatePasswordStrength(password);
+        if (!strength.isValid) {
+            return res.status(400).json({ error: strength.errors.join('; ') });
         }
 
         // Rate limit registration
