@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -284,21 +284,29 @@ class MemberService:
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
         
-        return {
+        # Performance optimization: single query for all states instead of 5 separate .count() queries
+        state_counts = self.db.query(Member.current_state, func.count(Member.id)).group_by(Member.current_state).all()
+
+        stats = {
             "total": total,
-            "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
-            "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
+            "active": 0,
+            "at_risk": 0,
+            "dormant": 0,
+            "churned": 0,
+            "new": 0,
         }
+
+        for state, count in state_counts:
+            if state is None:
+                continue
+            state_key = state.name.lower() if hasattr(state, 'name') else str(state).lower()
+            if state_key in stats:
+                stats[state_key] = count
+
+        stats["retention_rate"] = round((stats["active"] / total) * 100, 1) if total > 0 else 0
+
+        return stats
     
     def get_conversation_history(
         self,
