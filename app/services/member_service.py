@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,12 +283,22 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # ⚡ Bolt Optimization: Group by state to reduce DB calls from 6 to 1
+        # SQLAlchemy returns the actual Enum object (e.g. MemberState.ACTIVE),
+        # not the string value, so we must use the Enum keys directly.
+        state_counts = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        counts_dict = {state: count for state, count in state_counts}
+
+        # Calculate total by summing grouped counts to avoid an extra DB query
+        total = sum(counts_dict.values())
+        active = counts_dict.get(MemberState.ACTIVE, 0)
+        at_risk = counts_dict.get(MemberState.AT_RISK, 0)
+        dormant = counts_dict.get(MemberState.DORMANT, 0)
+        churned = counts_dict.get(MemberState.CHURNED, 0)
+        new = counts_dict.get(MemberState.NEW, 0)
         
         return {
             "total": total,
