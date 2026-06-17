@@ -1,0 +1,3 @@
+## 2025-03-03 - [Optimize Repeated Count Queries]
+**Learning:** Executing multiple `.count()` queries on the same table with different filters leads to an N+1 equivalent problem that loads the database significantly. Furthermore, when querying with SQLAlchemy `group_by` on an `Enum` column, the returned dictionary keys are Python Enum members (e.g., `MemberState.ACTIVE`), requiring lookup by the Enum object rather than its string value.
+**Action:** Replace multiple `.count()` queries by using a single query with `func.count()` grouped by the necessary condition. Use a dictionary aggregation with Enum object keys to map the grouped counts to the required values in O(1) query time.
