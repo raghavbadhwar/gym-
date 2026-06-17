@@ -283,21 +283,43 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
+        from sqlalchemy import func
         total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+
+        # ⚡ Bolt: Use a single group_by query instead of multiple count() queries
+        # to reduce database hits from 6 to 2
+        state_counts = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        stats = {
+            "active": 0,
+            "at_risk": 0,
+            "dormant": 0,
+            "churned": 0,
+            "new": 0,
+        }
+
+        for state, count in state_counts:
+            if state is None:
+                continue
+            # Robust fallback for Enum types (handle variations in database drivers)
+            state_key = state.name.lower() if hasattr(state, 'name') else str(state).lower()
+            if '.' in state_key:
+                state_key = state_key.split('.')[-1]
+
+            if state_key in stats:
+                stats[state_key] = count
         
         return {
             "total": total,
-            "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
-            "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
+            "active": stats["active"],
+            "at_risk": stats["at_risk"],
+            "dormant": stats["dormant"],
+            "churned": stats["churned"],
+            "new": stats["new"],
+            "retention_rate": round((stats["active"] / total) * 100, 1) if total > 0 else 0
         }
     
     def get_conversation_history(
