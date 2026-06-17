@@ -1,0 +1,4 @@
+## 2024-05-01 - Optimize Dashboard Stats with SQLAlchemy group_by
+**Learning:** When optimizing multiple `.count()` queries by using `.group_by(ColumnName)` in SQLAlchemy, if the column uses an `Enum` type, the resulting keys in the grouped result set will be Python Enum members (e.g., `MemberState.ACTIVE`), not simple string values. Looking up string keys instead of Enum members will result in missing counts.
+
+**Action:** When aggregating rows based on an Enum column using `.group_by`, always build the resulting dictionary by mapping Enum keys to their counts, and look up specific values using the exact Enum members (like `counts.get(MemberState.ACTIVE, 0)`). This avoids zero-count defaults and accurately consolidates the aggregate results.
