@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,12 +283,23 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # ⚡ Bolt: Single query group_by optimization replacing 6 .count() queries
+        stats_query = self.db.query(
+            Member.current_state, func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        stats = {state.value: 0 for state in MemberState}
+        for state, count in stats_query:
+            if state:
+                # Enum mapping
+                stats[state.value if hasattr(state, 'value') else state] = count
+
+        total = sum(stats.values())
+        active = stats.get(MemberState.ACTIVE.value, 0)
+        at_risk = stats.get(MemberState.AT_RISK.value, 0)
+        dormant = stats.get(MemberState.DORMANT.value, 0)
+        churned = stats.get(MemberState.CHURNED.value, 0)
+        new = stats.get(MemberState.NEW.value, 0)
         
         return {
             "total": total,
