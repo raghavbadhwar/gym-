@@ -8,7 +8,7 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from loguru import logger
 
 from app.models.member import Member, MemberState, PrimaryGoal, DietaryPreference, Gender
@@ -283,21 +283,39 @@ class MemberService:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get member statistics for dashboard."""
-        total = self.db.query(Member).count()
-        active = self.db.query(Member).filter(Member.current_state == MemberState.ACTIVE).count()
-        at_risk = self.db.query(Member).filter(Member.current_state == MemberState.AT_RISK).count()
-        dormant = self.db.query(Member).filter(Member.current_state == MemberState.DORMANT).count()
-        churned = self.db.query(Member).filter(Member.current_state == MemberState.CHURNED).count()
-        new = self.db.query(Member).filter(Member.current_state == MemberState.NEW).count()
+        # Optimization: Replaced 6 separate .count() queries with a single .group_by()
+        # database aggregation. This significantly reduces database roundtrips and
+        # improves performance for dashboard loading.
+        state_counts = self.db.query(
+            Member.current_state,
+            func.count(Member.id)
+        ).group_by(Member.current_state).all()
+
+        stats = {
+            "active": 0,
+            "at_risk": 0,
+            "dormant": 0,
+            "churned": 0,
+            "new": 0,
+        }
         
+        total = 0
+        for state, count in state_counts:
+            total += count
+            if state:
+                # Handle enum mapping safely depending on ORM return type
+                state_val = state.value if hasattr(state, 'value') else state
+                if state_val in stats:
+                    stats[state_val] = count
+
         return {
             "total": total,
-            "active": active,
-            "at_risk": at_risk,
-            "dormant": dormant,
-            "churned": churned,
-            "new": new,
-            "retention_rate": round((active / total) * 100, 1) if total > 0 else 0
+            "active": stats["active"],
+            "at_risk": stats["at_risk"],
+            "dormant": stats["dormant"],
+            "churned": stats["churned"],
+            "new": stats["new"],
+            "retention_rate": round((stats["active"] / total) * 100, 1) if total > 0 else 0
         }
     
     def get_conversation_history(
