@@ -587,6 +587,11 @@ body {
 }
 
 .command-card {
+    appearance: none;
+    text-align: left;
+    width: 100%;
+    color: inherit;
+    font-family: inherit;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -596,12 +601,18 @@ body {
     border-radius: 16px;
     cursor: pointer;
     transition: all var(--transition-smooth);
+    outline: none;
 }
 
 .command-card:hover {
     background: var(--bg-card-hover);
     border-color: var(--border-glow);
     transform: translateX(4px);
+}
+
+.command-card:focus-visible {
+    border-color: var(--border-glow);
+    box-shadow: 0 0 0 2px var(--border-glow);
 }
 
 .cmd-icon {
