@@ -1,0 +1,3 @@
+## 2024-05-24 - Group By Optimization
+**Learning:** In SQLAlchemy, executing multiple `.count()` queries on the same table with different filters is inefficient. When querying Enum columns, the database driver might return either actual Enum objects or raw string values depending on configuration.
+**Action:** Replace multiple filtered `.count()` queries with a single `.group_by()` query. Retain a separate query for the total count to ensure records with `NULL` or unmapped states are not missed. Always map the `.group_by()` result safely using `state if hasattr(state, 'value') else EnumClass(state)` to handle driver variations gracefully.
