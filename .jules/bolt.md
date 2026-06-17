@@ -1,0 +1,3 @@
+## 2023-10-27 - Optimize BookingService.get_member_bookings N+1 queries
+**Learning:** In SQLAlchemy, iterating through elements that access relationships (like `booking.gym_class.name`) causes an N+1 query issue if not explicitly eager loaded. Since `get_member_bookings` was already filtering by `join(Class)`, utilizing `.options(contains_eager(ClassBooking.gym_class))` tells SQLAlchemy to reuse the existing JOIN to eagerly load the relationship, avoiding duplicate joins or extra SELECTs.
+**Action:** Use `.options(contains_eager(relationship))` when a query already includes a manual `.join()` for filtering, to optimize loading related objects without redundancy.
