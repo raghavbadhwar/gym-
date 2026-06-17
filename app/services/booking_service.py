@@ -473,12 +473,15 @@ class BookingService:
         if not classes:
             return {"total_classes": 0, "avg_utilization": 0}
         
-        total_capacity = sum(c.capacity for c in classes)
-        total_booked = sum(c.booked_count for c in classes)
-        
-        # By class type
+        total_capacity = 0
+        total_booked = 0
         by_type = {}
+
+        # Single pass for all aggregations
         for c in classes:
+            total_capacity += c.capacity
+            total_booked += c.booked_count
+
             if c.class_type not in by_type:
                 by_type[c.class_type] = {"capacity": 0, "booked": 0}
             by_type[c.class_type]["capacity"] += c.capacity
