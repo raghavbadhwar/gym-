@@ -1,0 +1,3 @@
+## 2024-03-10 - Optimize MemberService.get_stats with Single Group By Query
+**Learning:** When querying with SQLAlchemy `group_by` on an `Enum` column, the returned dictionary keys are Python Enum members (e.g., `MemberState.ACTIVE`), requiring lookup by the Enum object rather than its string value.
+**Action:** When working with SQLAlchemy queries that group by enum columns, ensure dictionary lookups on the results use the enum class members directly, rather than strings, to prevent `KeyError`s or missing data. Also, replace multiple `.count()` queries with a single `.group_by()` query to reduce database roundtrips and improve performance.
