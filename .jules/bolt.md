@@ -1,0 +1,3 @@
+## 2025-05-24 - N+1 Enum Counts
+**Learning:** Refactoring multiple separated ORM count queries on Enum attributes into a single `group_by` statement significantly reduces database roundtrips. When mapping grouped Enum columns from query results directly into Python dictionary keys, you must ensure the explicit lookup mappings correspond correctly to Enum types rather than raw strings for successful comparisons.
+**Action:** When gathering diverse stats for aggregated endpoints, look for N+1 queries. Always combine state counting into a grouped query, but explicitly handle the Enum-to-Enum mappings safely.
