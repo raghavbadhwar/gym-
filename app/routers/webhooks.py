@@ -42,7 +42,9 @@ async def verify_webhook(
     # Security: Use hmac.compare_digest to prevent timing attacks.
     # Also check for None types to avoid TypeError during comparison.
     if hub_mode == "subscribe" and hub_verify_token is not None and settings.whatsapp_verify_token is not None:
-        if hmac.compare_digest(hub_verify_token, settings.whatsapp_verify_token):
+        # Encode strings to utf-8 bytes to prevent TypeError exceptions caused by non-ASCII
+        # characters acting as a Denial of Service (DoS) vulnerability.
+        if hmac.compare_digest(hub_verify_token.encode('utf-8'), settings.whatsapp_verify_token.encode('utf-8')):
             logger.success("WhatsApp webhook verified successfully ✅")
             return int(hub_challenge)
     
